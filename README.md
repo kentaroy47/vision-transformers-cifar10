@@ -10,6 +10,6 @@ I use pytorch for implementation.
 |             | Accuracy |
 |:-----------:|:--------:|
 | ViT patch=2 |     ?    |
-| ViT patch=4 |    50%   |
+| ViT patch=4 |    70%   |
 | ViT patch=8 |    30%   |
 |   resnet18  |  93% ;)  |
