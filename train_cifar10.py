@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
+import numpy as np
 
 import torchvision
 import torchvision.transforms as transforms
@@ -21,6 +22,7 @@ import os
 import argparse
 
 from models import *
+from models.vit import ViT
 from utils import progress_bar
 
 # parsers
@@ -30,6 +32,7 @@ parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--net', default='vit')
 parser.add_argument('--bs', default='64')
+parser.add_argument('--patch', default='4', type=int)
 parser.add_argument('--cos', action='store_true', help='Train with cosine annealing scheduling')
 args = parser.parse_args()
 
@@ -81,7 +84,7 @@ elif args.net=="vit":
     # ViT for cifar10
     net = ViT(
     image_size = 32,
-    patch_size = 4,
+    patch_size = args.patch,
     num_classes = 10,
     dim = 512,
     depth = 6,
@@ -109,9 +112,9 @@ if args.resume:
 criterion = nn.CrossEntropyLoss()
 # reduce LR on Plateau
 if args.opt == "adam":
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr)
 elif args.opt == "sgd":
-    optimizer = optim.SGD(model.parameters(), lr=args.lr)    
+    optimizer = optim.SGD(net.parameters(), lr=args.lr)    
 if not args.cos:
     from torch.optim import lr_scheduler
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=4, verbose=True, min_lr=1e-3*1e-5, factor=0.1)
@@ -144,6 +147,7 @@ def train(epoch):
     return train_loss/(batch_idx+1)
 
 ##### Validation
+import time
 def test(epoch):
     global best_acc
     net.eval()
@@ -181,6 +185,12 @@ def test(epoch):
             os.mkdir('checkpoint')
         torch.save(state, './checkpoint/'+args.net+'-ckpt.t7')
         best_acc = acc
+    
+    os.makedirs("log", exist_ok=True)
+    content = time.ctime() + ' ' + f'Epoch {epoch}, lr: {optimizer.param_groups[0]["lr"]:.7f}, val loss: {test_loss:.5f}, acc: {(acc):.5f}'
+    print(content)
+    with open(f'log/log_{args.net}_patch{args.patch}.txt', 'a') as appender:
+        appender.write(content + "\n")
 
 list_loss = []
 
