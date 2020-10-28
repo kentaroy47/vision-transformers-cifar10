@@ -20,6 +20,8 @@ import torchvision.transforms as transforms
 
 import os
 import argparse
+import pandas as pd
+import csv
 
 from models import *
 from models.vit import ViT
@@ -27,7 +29,7 @@ from utils import progress_bar
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
+parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--net', default='vit')
@@ -191,16 +193,25 @@ def test(epoch):
     print(content)
     with open(f'log/log_{args.net}_patch{args.patch}.txt', 'a') as appender:
         appender.write(content + "\n")
+    return test_loss, acc
 
 list_loss = []
-
+list_acc = []
 for epoch in range(start_epoch, start_epoch+50):
     trainloss = train(epoch)
-    test(epoch)
+    val_loss, acc = test(epoch)
     
     if args.cos:
         scheduler.step(epoch-1)
     
-    list_loss.append(trainloss)
+    list_loss.append(val_loss)
+    list_acc.append(acc)
+    
+    # write as csv for analysis
+    with open(f'log/log_{args.net}_patch{args.patch}.csv', 'w') as f:
+        writer = csv.writer(f, lineterminator='\n')
+        writer.writerow(list_loss) 
+        writer.writerow(list_acc) 
     print(list_loss)
-print(list_loss)
+    
+    
