@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-'''Train CIFAR10 with PyTorch.'''
+'''
+
+Train CIFAR10 with PyTorch and Vision Transformers!
+written by @kentaroy47, @arutema47
+
+'''
 
 from __future__ import print_function
 
@@ -18,13 +23,18 @@ import argparse
 from models import *
 from utils import progress_bar
 
-
+# parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
+parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--net', default='res18')
-parser.add_argument('--bs', default='128')
+parser.add_argument('--net', default='vit')
+parser.add_argument('--bs', default='64')
+parser.add_argument('--cos', action='store_true', help='Train with cosine annealing scheduling')
 args = parser.parse_args()
+
+if args.cos:
+    from warmup_scheduler import GradualWarmupScheduler
 
 bs = int(args.bs)
 
@@ -67,15 +77,20 @@ elif args.net=='res50':
     net = ResNet50()
 elif args.net=='res101':
     net = ResNet101()
-# net = PreActResNet18()
-# net = GoogLeNet()
-# net = DenseNet121()
-# net = ResNeXt29_2x64d()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
+elif args.net=="vit":
+    # ViT for cifar10
+    net = ViT(
+    image_size = 32,
+    patch_size = 4,
+    num_classes = 10,
+    dim = 512,
+    depth = 6,
+    heads = 8,
+    mlp_dim = 512,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
+
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net) # make parallel
@@ -90,10 +105,21 @@ if args.resume:
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
 
+# Loss is CE
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-
-# Training
+# reduce LR on Plateau
+if args.opt == "adam":
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+elif args.opt == "sgd":
+    optimizer = optim.SGD(model.parameters(), lr=args.lr)    
+if not args.cos:
+    from torch.optim import lr_scheduler
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=4, verbose=True, min_lr=1e-3*1e-5, factor=0.1)
+else:
+    scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 50-1)
+    scheduler = GradualWarmupScheduler(optimizer, multiplier=10, total_epoch=1, after_scheduler=scheduler_cosine)
+    
+##### Training
 def train(epoch):
     print('\nEpoch: %d' % epoch)
     net.train()
@@ -117,6 +143,7 @@ def train(epoch):
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
     return train_loss/(batch_idx+1)
 
+##### Validation
 def test(epoch):
     global best_acc
     net.eval()
@@ -136,7 +163,11 @@ def test(epoch):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
-
+    
+    # Update scheduler
+    if not args.cos:
+        scheduler.step(test_loss)
+    
     # Save checkpoint.
     acc = 100.*correct/total
     if acc > best_acc:
@@ -156,6 +187,9 @@ list_loss = []
 for epoch in range(start_epoch, start_epoch+50):
     trainloss = train(epoch)
     test(epoch)
+    
+    if args.cos:
+        scheduler.step(epoch-1)
     
     list_loss.append(trainloss)
     print(list_loss)
