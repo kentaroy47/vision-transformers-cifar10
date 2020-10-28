@@ -36,6 +36,7 @@ parser.add_argument('--aug', action='store_true', help='add image augumentations
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
 parser.add_argument('--bs', default='64')
+parser.add_argument('--n_epochs', type=int, default='100')
 parser.add_argument('--patch', default='4', type=int)
 parser.add_argument('--cos', action='store_true', help='Train with cosine annealing scheduling')
 args = parser.parse_args()
@@ -108,7 +109,7 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ckpt.t7')
+    checkpoint = torch.load('./checkpoint/{}-ckpt.t7'.format(args.net))
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
@@ -122,9 +123,9 @@ elif args.opt == "sgd":
     optimizer = optim.SGD(net.parameters(), lr=args.lr)    
 if not args.cos:
     from torch.optim import lr_scheduler
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=4, verbose=True, min_lr=1e-3*1e-5, factor=0.1)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3, verbose=True, min_lr=1e-3*1e-5, factor=0.1)
 else:
-    scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 50-1)
+    scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs-1)
     scheduler = GradualWarmupScheduler(optimizer, multiplier=10, total_epoch=1, after_scheduler=scheduler_cosine)
     
 ##### Training
@@ -188,7 +189,7 @@ def test(epoch):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/'+args.net+'-ckpt.t7')
+        torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
         best_acc = acc
     
     os.makedirs("log", exist_ok=True)
@@ -200,7 +201,7 @@ def test(epoch):
 
 list_loss = []
 list_acc = []
-for epoch in range(start_epoch, start_epoch+50):
+for epoch in range(start_epoch, args.n_epochs):
     trainloss = train(epoch)
     val_loss, acc = test(epoch)
     
