@@ -18,3 +18,4 @@ Wed Oct 28 02:08:00 2020 Epoch 6, lr: 0.0001000, val loss: 99.65152, acc: 64.810
 Wed Oct 28 02:09:00 2020 Epoch 7, lr: 0.0001000, val loss: 96.75021, acc: 65.18000
 Wed Oct 28 02:10:00 2020 Epoch 8, lr: 0.0001000, val loss: 95.94366, acc: 66.62000
 Wed Oct 28 02:11:00 2020 Epoch 9, lr: 0.0001000, val loss: 90.92524, acc: 67.88000
+Wed Oct 28 02:11:59 2020 Epoch 10, lr: 0.0001000, val loss: 86.86540, acc: 68.65000
