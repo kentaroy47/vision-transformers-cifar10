@@ -32,6 +32,8 @@ parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--aug', action='store_true', help='add image augumentations')
+parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
 parser.add_argument('--bs', default='64')
 parser.add_argument('--patch', default='4', type=int)
@@ -40,7 +42,8 @@ args = parser.parse_args()
 
 if args.cos:
     from warmup_scheduler import GradualWarmupScheduler
-
+if args.aug:
+    import albumentations
 bs = int(args.bs)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

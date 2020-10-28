@@ -1,0 +1,20 @@
+epoch:0
+Wed Oct 28 01:51:01 2020 Epoch 0, lr: 0.0010000, val loss: 180.20140, acc: 33.13000
+Wed Oct 28 01:52:01 2020 Epoch 1, lr: 0.0010000, val loss: 179.97329, acc: 32.36000
+Wed Oct 28 01:53:00 2020 Epoch 2, lr: 0.0010000, val loss: 179.32603, acc: 32.80000
+Wed Oct 28 01:54:00 2020 Epoch 3, lr: 0.0010000, val loss: 181.79181, acc: 32.14000
+Wed Oct 28 01:55:00 2020 Epoch 4, lr: 0.0010000, val loss: 188.70130, acc: 29.35000
+Wed Oct 28 01:56:00 2020 Epoch 5, lr: 0.0010000, val loss: 186.38675, acc: 29.51000
+Wed Oct 28 01:57:00 2020 Epoch 6, lr: 0.0010000, val loss: 182.03238, acc: 32.15000
+Wed Oct 28 01:57:59 2020 Epoch 7, lr: 0.0010000, val loss: 179.17239, acc: 32.87000
+Wed Oct 28 02:00:43 2020 Epoch 0, lr: 0.0001000, val loss: 144.29908, acc: 47.54000
+Wed Oct 28 02:02:01 2020 Epoch 0, lr: 0.0001000, val loss: 147.54357, acc: 47.53000
+Wed Oct 28 02:03:01 2020 Epoch 1, lr: 0.0001000, val loss: 128.51441, acc: 53.95000
+Wed Oct 28 02:04:01 2020 Epoch 2, lr: 0.0001000, val loss: 117.53147, acc: 57.97000
+Wed Oct 28 02:05:01 2020 Epoch 3, lr: 0.0001000, val loss: 113.57985, acc: 59.17000
+Wed Oct 28 02:06:00 2020 Epoch 4, lr: 0.0001000, val loss: 105.23545, acc: 62.58000
+Wed Oct 28 02:07:00 2020 Epoch 5, lr: 0.0001000, val loss: 102.42212, acc: 63.37000
+Wed Oct 28 02:08:00 2020 Epoch 6, lr: 0.0001000, val loss: 99.65152, acc: 64.81000
+Wed Oct 28 02:09:00 2020 Epoch 7, lr: 0.0001000, val loss: 96.75021, acc: 65.18000
+Wed Oct 28 02:10:00 2020 Epoch 8, lr: 0.0001000, val loss: 95.94366, acc: 66.62000
+Wed Oct 28 02:11:00 2020 Epoch 9, lr: 0.0001000, val loss: 90.92524, acc: 67.88000
