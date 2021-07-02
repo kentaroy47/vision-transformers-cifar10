@@ -21,5 +21,5 @@ I use pytorch for implementation.
 | ViT patch=2 |    80%    |
 | ViT patch=4 |    80%   |
 | ViT patch=8 |    30%   |
-| ViT Timm transfer | 96% |
+| ViT Timm transfer | 97.3% |
 |   resnet18  |  93% ;)  |
