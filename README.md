@@ -12,6 +12,8 @@ I use pytorch for implementation.
 
 `python train_cifar10.py --net res18` # resnet18
 
+`python train_cifar10.py --net vit_timm --lr 1e-4` # train with pretrained vit
+
 # Results..
 
 |             | Accuracy |
@@ -19,4 +21,5 @@ I use pytorch for implementation.
 | ViT patch=2 |    80%    |
 | ViT patch=4 |    80%   |
 | ViT patch=8 |    30%   |
+| ViT Timm transfer | 96% |
 |   resnet18  |  93% ;)  |

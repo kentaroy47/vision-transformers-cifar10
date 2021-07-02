@@ -22,6 +22,7 @@ import os
 import argparse
 import pandas as pd
 import csv
+import time
 
 from models import *
 from models.vit import ViT
@@ -29,17 +30,28 @@ from utils import progress_bar
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
+parser.add_argument('--lr', default=1e-3, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--aug', action='store_true', help='add image augumentations')
+parser.add_argument('--amp', action='store_true', help='enable AMP training')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
-parser.add_argument('--bs', default='64')
-parser.add_argument('--n_epochs', type=int, default='100')
+parser.add_argument('--bs', default='256')
+parser.add_argument('--n_epochs', type=int, default='50')
 parser.add_argument('--patch', default='4', type=int)
 parser.add_argument('--cos', action='store_true', help='Train with cosine annealing scheduling')
 args = parser.parse_args()
+
+# take in args
+import wandb
+watermark = "{}_lr{}".format(args.net, args.lr)
+if args.amp:
+    watermark += "_useamp"
+
+wandb.init(project="cifar10-challange",
+           name=watermark)
+wandb.config.update(args)
 
 if args.cos:
     from warmup_scheduler import GradualWarmupScheduler
@@ -47,20 +59,28 @@ if args.aug:
     import albumentations
 bs = int(args.bs)
 
+use_amp = args.amp
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
 print('==> Preparing data..')
+if args.net=="vit_timm":
+    size = 224
+else:
+    size = 32
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
+    transforms.Resize(size),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
 transform_test = transforms.Compose([
+    transforms.Resize(size),
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
@@ -99,6 +119,10 @@ elif args.net=="vit":
     dropout = 0.1,
     emb_dropout = 0.1
 )
+elif args.net=="vit_timm":
+    import timm
+    net = timm.create_model("vit_small_patch16_224", pretrained=True)
+    net.head = nn.Linear(net.head.in_features, 10)
 
 net = net.to(device)
 if device == 'cuda':
@@ -127,8 +151,14 @@ if not args.cos:
 else:
     scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs-1)
     scheduler = GradualWarmupScheduler(optimizer, multiplier=10, total_epoch=1, after_scheduler=scheduler_cosine)
-    
+
+if args.cos:
+    wandb.config.scheduler = "cosine"
+else:
+    wandb.config.scheduler = "ReduceLROnPlateau"
+
 ##### Training
+scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 def train(epoch):
     print('\nEpoch: %d' % epoch)
     net.train()
@@ -137,11 +167,14 @@ def train(epoch):
     total = 0
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
+        # Train with amp
+        with torch.cuda.amp.autocast(enabled=use_amp):
+            outputs = net(inputs)
+            loss = criterion(outputs, targets)
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         optimizer.zero_grad()
-        outputs = net(inputs)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
 
         train_loss += loss.item()
         _, predicted = outputs.max(1)
@@ -153,7 +186,6 @@ def train(epoch):
     return train_loss/(batch_idx+1)
 
 ##### Validation
-import time
 def test(epoch):
     global best_acc
     net.eval()
@@ -182,11 +214,9 @@ def test(epoch):
     acc = 100.*correct/total
     if acc > best_acc:
         print('Saving..')
-        state = {
-            'net': net.state_dict(),
-            'acc': acc,
-            'epoch': epoch,
-        }
+        state = {"model": net.state_dict(),
+              "optimizer": optimizer.state_dict(),
+              "scaler": scaler.state_dict()}
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
         torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
@@ -201,7 +231,10 @@ def test(epoch):
 
 list_loss = []
 list_acc = []
+
+wandb.watch(net)
 for epoch in range(start_epoch, args.n_epochs):
+    start = time.time()
     trainloss = train(epoch)
     val_loss, acc = test(epoch)
     
@@ -211,11 +244,17 @@ for epoch in range(start_epoch, args.n_epochs):
     list_loss.append(val_loss)
     list_acc.append(acc)
     
-    # write as csv for analysis
+    # Log training..
+    wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
+        "epoch_time": time.time()-start})
+
+    # Write out csv..
     with open(f'log/log_{args.net}_patch{args.patch}.csv', 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerow(list_loss) 
         writer.writerow(list_acc) 
     print(list_loss)
-    
+
+# writeout wandb
+wandb.save("wandb_{}.h5".format(args.net))
     
