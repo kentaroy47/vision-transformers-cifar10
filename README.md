@@ -25,3 +25,6 @@ I use pytorch for implementation.
 | ViT base (timm transfer) | 98.5% |
 | ViT large (timm transfer) | ??% |
 |   resnet18  |  93%  |
+
+# Used in..
+* Vision Transformer Pruning [arxiv](https://arxiv.org/abs/2104.08500) [github](https://github.com/Cydia2018/ViT-cifar10-pruning)
