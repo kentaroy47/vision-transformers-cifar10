@@ -21,5 +21,10 @@ I use pytorch for implementation.
 | ViT patch=2 |    80%    |
 | ViT patch=4 |    80%   |
 | ViT patch=8 |    30%   |
-| ViT Timm transfer | 97.3% |
-|   resnet18  |  93% ;)  |
+| ViT small (timm transfer) | 97.5% |
+| ViT base (timm transfer) | 98.5% |
+| ViT large (timm transfer) | ??% |
+|   resnet18  |  93%  |
+
+# Used in..
+* Vision Transformer Pruning [arxiv](https://arxiv.org/abs/2104.08500) [github](https://github.com/Cydia2018/ViT-cifar10-pruning)
