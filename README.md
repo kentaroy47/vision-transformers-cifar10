@@ -14,6 +14,8 @@ I use pytorch for implementation.
 
 `python train_cifar10.py --net vit_timm --lr 1e-4` # train with pretrained vit
 
+`python train_cifar10.py --net convmixer --lr 1e-4` # train with convmixer
+
 # Results..
 
 |             | Accuracy |
@@ -23,7 +25,7 @@ I use pytorch for implementation.
 | ViT patch=8 |    30%   |
 | ViT small (timm transfer) | 97.5% |
 | ViT base (timm transfer) | 98.5% |
-| ViT large (timm transfer) | ??% |
+| [ConvMixerTiny(no pretrain)](https://openreview.net/forum?id=TVHS5Y4dNvM) | 96.3% |
 |   resnet18  |  93%  |
 
 # Used in..
