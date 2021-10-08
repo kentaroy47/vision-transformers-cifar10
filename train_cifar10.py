@@ -27,6 +27,7 @@ import time
 from models import *
 from models.vit import ViT
 from utils import progress_bar
+from models.convmixer import ConvMixer
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
@@ -68,7 +69,7 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 # Data
 print('==> Preparing data..')
 if args.net=="vit_timm":
-    size = 224
+    size = 384
 else:
     size = 32
 transform_train = transforms.Compose([
@@ -106,6 +107,9 @@ elif args.net=='res50':
     net = ResNet50()
 elif args.net=='res101':
     net = ResNet101()
+elif args.net=="convmixer":
+    # from paper, accuracy >96%
+    net = ConvMixer(256, 16, kernel_size=8, patch_size=1, n_classes=10)
 elif args.net=="vit":
     # ViT for cifar10
     net = ViT(
@@ -121,7 +125,7 @@ elif args.net=="vit":
 )
 elif args.net=="vit_timm":
     import timm
-    net = timm.create_model("vit_small_patch16_224", pretrained=True)
+    net = timm.create_model("vit_large_patch16_384", pretrained=True)
     net.head = nn.Linear(net.head.in_features, 10)
 
 net = net.to(device)
