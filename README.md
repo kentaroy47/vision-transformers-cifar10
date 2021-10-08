@@ -5,6 +5,10 @@ This is an unofficial and elementary implementation of `An Image is Worth 16x16 
 
 I use pytorch for implementation.
 
+### Updates
+Added [ConvMixer]((https://openreview.net/forum?id=TVHS5Y4dNvM)) implementation. Really simple! (2021/10)
+
+
 # Usage
 `python train_cifar10.py` # vit-patchsize-4
 

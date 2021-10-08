@@ -41,6 +41,7 @@ parser.add_argument('--net', default='vit')
 parser.add_argument('--bs', default='256')
 parser.add_argument('--n_epochs', type=int, default='50')
 parser.add_argument('--patch', default='4', type=int)
+parser.add_argument('--convkernel', default='8', type=int)
 parser.add_argument('--cos', action='store_true', help='Train with cosine annealing scheduling')
 args = parser.parse_args()
 
@@ -109,7 +110,7 @@ elif args.net=='res101':
     net = ResNet101()
 elif args.net=="convmixer":
     # from paper, accuracy >96%
-    net = ConvMixer(256, 16, kernel_size=8, patch_size=1, n_classes=10)
+    net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
 elif args.net=="vit":
     # ViT for cifar10
     net = ViT(
