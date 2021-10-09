@@ -28,13 +28,14 @@ from models import *
 from models.vit import ViT
 from utils import progress_bar
 from models.convmixer import ConvMixer
+from randomaug import RandAugment
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-3, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--aug', action='store_true', help='add image augumentations')
+parser.add_argument('--aug', action='store_true', help='use randomaug')
 parser.add_argument('--amp', action='store_true', help='enable AMP training')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
@@ -42,7 +43,8 @@ parser.add_argument('--bs', default='256')
 parser.add_argument('--n_epochs', type=int, default='50')
 parser.add_argument('--patch', default='4', type=int)
 parser.add_argument('--convkernel', default='8', type=int)
-parser.add_argument('--cos', action='store_true', help='Train with cosine annealing scheduling')
+parser.add_argument('--cos', action='store_false', help='Train with cosine annealing scheduling')
+
 args = parser.parse_args()
 
 # take in args
@@ -55,8 +57,6 @@ wandb.init(project="cifar10-challange",
            name=watermark)
 wandb.config.update(args)
 
-if args.cos:
-    from warmup_scheduler import GradualWarmupScheduler
 if args.aug:
     import albumentations
 bs = int(args.bs)
@@ -87,6 +87,11 @@ transform_test = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
 
+# Add RandAugment with N, M(hyperparameter)
+if args.aug:  
+    N = 2; M = 14;
+    transform_train.transforms.insert(0, RandAugment(N, M))
+
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
@@ -109,7 +114,7 @@ elif args.net=='res50':
 elif args.net=='res101':
     net = ResNet101()
 elif args.net=="convmixer":
-    # from paper, accuracy >96%
+    # from paper, accuracy >96%. you can tune the depth and dim to scale accuracy and speed.
     net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
 elif args.net=="vit":
     # ViT for cifar10
@@ -145,17 +150,18 @@ if args.resume:
 
 # Loss is CE
 criterion = nn.CrossEntropyLoss()
-# reduce LR on Plateau
+
 if args.opt == "adam":
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
 elif args.opt == "sgd":
-    optimizer = optim.SGD(net.parameters(), lr=args.lr)    
+    optimizer = optim.SGD(net.parameters(), lr=args.lr)  
+    
+# use cosine or reduce LR on Plateau scheduling
 if not args.cos:
     from torch.optim import lr_scheduler
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3, verbose=True, min_lr=1e-3*1e-5, factor=0.1)
 else:
-    scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs-1)
-    scheduler = GradualWarmupScheduler(optimizer, multiplier=10, total_epoch=1, after_scheduler=scheduler_cosine)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs)
 
 if args.cos:
     wandb.config.scheduler = "cosine"
