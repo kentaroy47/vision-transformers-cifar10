@@ -18,7 +18,7 @@ Added [ConvMixer]((https://openreview.net/forum?id=TVHS5Y4dNvM)) implementation.
 
 `python train_cifar10.py --net vit_timm --lr 1e-4` # train with pretrained vit
 
-`python train_cifar10.py --net convmixer --lr 1e-4` # train with convmixer
+`python train_cifar10.py --net convmixer --aug --n_epochs 200` # train with convmixer
 
 # Results..
 
