@@ -6,7 +6,9 @@ This is an unofficial and elementary implementation of `An Image is Worth 16x16 
 I use pytorch for implementation.
 
 ### Updates
-Added [ConvMixer]((https://openreview.net/forum?id=TVHS5Y4dNvM)) implementation. Really simple! (2021/10)
+* Added [ConvMixer]((https://openreview.net/forum?id=TVHS5Y4dNvM)) implementation. Really simple! (2021/10)
+
+* Added wandb train log to reproduce results. (2022/3)
 
 
 # Usage
