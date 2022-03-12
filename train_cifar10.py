@@ -151,7 +151,7 @@ elif args.net=="vit_timm":
     net.head = nn.Linear(net.head.in_features, 10)
 elif args.net=="cait":
     from models.cait import CaiT
-    net = ViT(
+    net = CaiT(
     image_size = size,
     patch_size = args.patch,
     num_classes = 10,
