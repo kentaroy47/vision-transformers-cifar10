@@ -121,7 +121,7 @@ elif args.net=="convmixer":
 elif args.net=="vit":
     # ViT for cifar10
     net = ViT(
-    image_size = 32,
+    image_size = size,
     patch_size = args.patch,
     num_classes = 10,
     dim = 512,
@@ -133,7 +133,7 @@ elif args.net=="vit":
 )
 elif args.net=="vit_timm":
     import timm
-    net = timm.create_model("vit_large_patch16_384", pretrained=True)
+    net = timm.create_model("vit_base_patch16_384", pretrained=True)
     net.head = nn.Linear(net.head.in_features, 10)
 
 net = net.to(device)
