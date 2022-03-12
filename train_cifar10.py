@@ -119,6 +119,19 @@ elif args.net=='res101':
 elif args.net=="convmixer":
     # from paper, accuracy >96%. you can tune the depth and dim to scale accuracy and speed.
     net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
+elif args.net=="vit_small":
+    from models.vit_small import ViT
+    net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
+    depth = 6,
+    heads = 8,
+    mlp_dim = 512,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
 elif args.net=="vit":
     # ViT for cifar10
     net = ViT(
