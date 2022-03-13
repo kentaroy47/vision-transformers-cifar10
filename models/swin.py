@@ -1,3 +1,5 @@
+# https://github.com/berniwal/swin-transformer-pytorch
+
 import torch
 from torch import nn, einsum
 import numpy as np
