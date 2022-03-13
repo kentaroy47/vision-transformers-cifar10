@@ -12,6 +12,8 @@ I use pytorch for implementation.
 
 * Added CaiT and ViT-small. (2022/3)
 
+* Added SwinTransformers. (2022/3)
+
 
 # Usage example
 `python train_cifar10.py --lr 1e-4  --aug --n_epochs 200` # vit-patchsize-4
