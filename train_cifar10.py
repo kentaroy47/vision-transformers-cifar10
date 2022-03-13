@@ -164,7 +164,27 @@ elif args.net=="cait":
     emb_dropout = 0.1,
     layer_dropout = 0.05
 )
-net = net.to(device)
+elif args.net=="cait_small":
+    from models.cait import CaiT
+    net = CaiT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
+    depth = 6,   # depth of transformer for patch to patch attention only
+    cls_depth=2, # depth of cross attention of CLS tokens to patch
+    heads = 6,
+    mlp_dim = 256,
+    dropout = 0.1,
+    emb_dropout = 0.1,
+    layer_dropout = 0.05
+)
+elif args.net=="swin":
+    from models.swin import swin_t
+    net = swin_t(window_size=args.patch,
+                num_classes=10,
+                downscaling_factors=(2,2,2,1))
+
 if device == 'cuda':
     net = torch.nn.DataParallel(net) # make parallel
     cudnn.benchmark = True
