@@ -45,7 +45,7 @@ I use pytorch for implementation.
 | ViT patch=8 |    30%   | |
 | ViT small  | 80% | |
 | CaiT  | 80% | |
-| Swin-t  | 80% | |
+| Swin-t  | 90% | |
 | ViT small (timm transfer) | 97.5% | |
 | ViT base (timm transfer) | 98.5% | |
 | [ConvMixerTiny(no pretrain)](https://openreview.net/forum?id=TVHS5Y4dNvM) | 96.3% | |
