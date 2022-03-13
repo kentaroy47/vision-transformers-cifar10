@@ -28,6 +28,8 @@ I use pytorch for implementation.
 
 `python train_cifar10.py --net cait --lr 1e-4  --aug --n_epochs 200` # train with cait
 
+`python train_cifar10.py --net swin --lr 1e-4  --aug --n_epochs 200` # train with SwinTransformers
+
 `python train_cifar10.py --net res18` # resnet18
 
 `python train_cifar10.py --net res18 --aug --n_epochs 200` # resnet18+randaug
@@ -41,6 +43,7 @@ I use pytorch for implementation.
 | ViT patch=8 |    30%   | |
 | ViT small  | 80% | |
 | CaiT  | 80% | |
+| Swin-t  | 80% | |
 | ViT small (timm transfer) | 97.5% | |
 | ViT base (timm transfer) | 98.5% | |
 | [ConvMixerTiny(no pretrain)](https://openreview.net/forum?id=TVHS5Y4dNvM) | 96.3% | |
