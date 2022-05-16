@@ -132,6 +132,18 @@ elif args.net=="vit_small":
     dropout = 0.1,
     emb_dropout = 0.1
 )
+elif args.net=="simplevit":
+    from models.simplevit import SimpleViT
+    net = SimpleViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
+    depth = 6,
+    heads = 8,
+    mlp_dim = 512
+)
+
 elif args.net=="vit":
     # ViT for cifar10
     net = ViT(
