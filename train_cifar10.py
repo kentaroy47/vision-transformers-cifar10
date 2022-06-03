@@ -293,6 +293,10 @@ def test(epoch):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
         torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
+        # p?: ? is patch size
+        # epoch? : ? is num of epochs
+        # data?: ? is training data type (plain, block, pixel,bit or all)
+        torch.save(net.state_dict(), './checkpoint/'+args.net+'-p4-epoch200-data-plain-ckpt.pth')
         best_acc = acc
     
     os.makedirs("log", exist_ok=True)
