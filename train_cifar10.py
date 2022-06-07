@@ -30,6 +30,79 @@ from utils import progress_bar
 from models.convmixer import ConvMixer
 from randomaug import RandAugment
 
+
+# transformation
+class pixel_shuffling(object):
+    def __init__(self):
+        pass
+    def __call__(self, x):
+        M=4   # block size
+        result_x = torch.zeros_like(x)
+        C, H, W = x.shape
+        # torch.manual_seed(0)
+        # key = torch.randperm(M*M*C)
+        key = torch.tensor([
+            44, 22, 29, 18, 23, 20, 19, 41, 25, 39,  4,  2, 36, 32,  1, 13, 40, 10,
+            15, 33, 26,  3, 31, 27, 21, 30, 35,  0, 37, 38, 14, 12,  5,  6, 28, 43,
+            46, 45,  9,  8, 42,  7, 11, 47, 24, 17, 34, 16
+        ])
+        for h in range(0, H, M):
+            for w in range(0, W, M):
+                tmp = torch.ravel(x[:,h:h+M,w:w+M])
+                tmp = tmp[key]
+                tmp = torch.reshape(tmp, (C,M,M))
+                result_x[:,h:h+M,w:w+M] = tmp
+        return result_x
+
+class block_scrambling(object):
+    def __init__(self):
+        pass
+    def __call__(self, x):
+        M=4   # block size
+        C, H, W = x.shape
+        result_x = torch.zeros_like(x)
+        # torch.manual_seed(0)
+        # key = torch.randperm(int((H/M)*(W/M)))
+        key = torch.tensor([
+            44, 46, 17,  3, 47, 21, 35,  6, 33,  2, 63, 19, 28, 22, 42, 11, 40,  4,
+            14, 13, 15, 52,  8, 45, 48, 60, 55, 16, 61, 54,  9,  1, 51, 32, 59, 49,
+            31, 10, 26,  5, 18,  0, 62, 27, 38, 50, 34, 41, 43, 23, 56, 25, 57, 37,
+            30, 20, 53, 12, 29, 39,  7, 24, 58, 36
+        ])
+        blocks = torch.zeros((int((H/M)*(W/M)),C,M,M))
+        for h in range(0,H,M):
+          for w in range(0,W,M):
+            blocks[int(h/M)*int(W/M)+int(w/M),:,:,:] = x[:,h:h+M,w:w+M]
+        blocks = blocks[key]
+        for h in range(0,H,M):
+            for w in range(0,W,M):
+                result_x[:,h:h+M, w:w+M] = blocks[int(h/M)*int(W/M) + int(w/M)]
+        return result_x
+
+class bit_flipping(object):
+    def __init__(self):
+        pass
+    def __call__(self, x):
+        # print(x[0, 0, :5]) 0<=x<=1
+        M=4   # block size
+        result_x = torch.zeros_like(x)
+        C, H, W = x.shape
+        # torch.manual_seed(0)
+        # key = torch.tensor([i%2 for i in range(M*M*C)])
+        # key = key[torch.randperm(M*M*C)]
+        key = torch.tensor([
+            0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1,
+            1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0
+        ])
+        for h in range(0, H, M):
+            for w in range(0, W, M):
+                tmp = torch.ravel(x[:,h:h+M,w:w+M])
+                tmp[key==1] = 1. - tmp[key==1]
+                tmp = torch.reshape(tmp, (C,M,M))
+                result_x[:,h:h+M,w:w+M] = tmp
+        return result_x
+
+
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-3, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
@@ -95,10 +168,10 @@ if args.aug:
     N = 2; M = 14;
     transform_train.transforms.insert(0, RandAugment(N, M))
 
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+trainset = torchvision.datasets.CIFAR10(root='../../../data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+testset = torchvision.datasets.CIFAR10(root='../../../data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
@@ -118,7 +191,8 @@ elif args.net=='res101':
     net = ResNet101()
 elif args.net=="convmixer":
     # from paper, accuracy >96%. you can tune the depth and dim to scale accuracy and speed.
-    net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
+    # net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
+    net = ConvMixer(256, 8, kernel_size=9, patch_size=4, n_classes=10) # may be 91.61%
 elif args.net=="vit_small":
     from models.vit_small import ViT
     net = ViT(
@@ -293,6 +367,10 @@ def test(epoch):
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
         torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
+        # p?: patch size
+        # epoch? : num of epochs
+        # data: plain, block, or all
+        torch.save(net.state_dict(), './checkpoint/'+args.net+'-p4-epoch200-data-plain-ckpt.pth')
         best_acc = acc
     
     os.makedirs("log", exist_ok=True)

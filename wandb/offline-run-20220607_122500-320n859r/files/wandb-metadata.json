@@ -1,0 +1,30 @@
+{
+    "os": "Linux-5.4.0-109-generic-x86_64-with-Ubuntu-18.04-bionic",
+    "python": "3.6.9",
+    "heartbeatAt": "2022-06-07T03:25:07.783540",
+    "startedAt": "2022-06-07T03:25:00.116188",
+    "docker": null,
+    "gpu": "GeForce RTX 2080 Ti",
+    "gpu_count": 1,
+    "cpu_count": 4,
+    "cuda": null,
+    "args": [
+        "--net",
+        "convmixer",
+        "--aug",
+        "--n_epochs",
+        "200"
+    ],
+    "state": "running",
+    "program": "train_cifar10.py",
+    "codePath": "train_cifar10.py",
+    "git": {
+        "remote": "https://github.com/jimar884/vision-transformers-cifar10.git",
+        "commit": "b5a050a3b4cf0796d954eac4a3888b324c747656"
+    },
+    "email": "jimar884@gmail.com",
+    "root": "/lhome/iijima629/python/ConvMixer/MyConvMixer/vision-transformers-cifar10",
+    "host": "emerald",
+    "username": "iijima629",
+    "executable": "/lhome/iijima629/python/b4semi/bin/python3"
+}
