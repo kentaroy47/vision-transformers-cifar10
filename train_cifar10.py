@@ -27,7 +27,7 @@ import time
 from models import *
 from models.vit import ViT
 from utils import progress_bar
-from models.convmixer import ConvMixer
+from models.convmixer import ConvMixer, ConvMixer_adv
 from randomaug import RandAugment
 
 
@@ -155,14 +155,14 @@ transform_train = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ])
 
 transform_test = transforms.Compose([
     transforms.Resize(size),
     transforms.ToTensor(),
     # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ])
 
 # Add RandAugment with N, M(hyperparameter)
@@ -195,6 +195,10 @@ elif args.net=="convmixer":
     # from paper, accuracy >96%. you can tune the depth and dim to scale accuracy and speed.
     # net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
     net = ConvMixer(256, 8, kernel_size=9, patch_size=4, n_classes=10) # may be 91.61%
+elif args.net=="convmixer_adv":
+    # from paper, accuracy >96%. you can tune the depth and dim to scale accuracy and speed.
+    # net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
+    net = ConvMixer_adv(256, 8, kernel_size=9, patch_size=4, n_classes=10) # may be 91.61%
 elif args.net=="vit_small":
     from models.vit_small import ViT
     net = ViT(

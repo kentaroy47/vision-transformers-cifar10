@@ -29,3 +29,36 @@ def ConvMixer(dim, depth, kernel_size=9, patch_size=7, n_classes=1000):
  nn.Flatten(),
  nn.Linear(dim, n_classes)
 )
+
+class ConvMixer_adv(nn.Module):
+    def __init__(self, dim, depth, kernel_size=9, patch_size=7, n_classes=1000):
+        super(ConvMixer_adv, self).__init__()
+        self.patch_embedding = nn.Conv2d(3, dim, kernel_size=patch_size, stride=patch_size)
+        self.seq = nn.Sequential(
+            nn.GELU(),
+            nn.BatchNorm2d(dim),
+            *[nn.Sequential(
+            Residual(nn.Sequential(
+            nn.Conv2d(dim, dim, kernel_size, groups=dim, padding="same"),
+            nn.GELU(),
+            nn.BatchNorm2d(dim)
+            )),
+            nn.Conv2d(dim, dim, kernel_size=1),
+            nn.GELU(),
+            nn.BatchNorm2d(dim)
+            ) for i in range(depth)],
+            nn.AdaptiveAvgPool2d((1,1)),
+            nn.Flatten(),
+            nn.Linear(dim, n_classes)
+        )
+
+    def forward(self, x):
+        # print("hello")
+        # print("hello")
+        # print("hello")
+        # print("hello")
+        # print(x.shape)
+        x = (x - 0.5) / 0.5
+        x = self.patch_embedding(x)
+        return self.seq(x)
+

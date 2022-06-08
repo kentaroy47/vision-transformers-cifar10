@@ -402,3 +402,11 @@ Wed Jun  8 10:26:17 2022 Epoch 196, lr: 0.0000022, val loss: 31.75278, acc: 90.5
 Wed Jun  8 10:26:28 2022 Epoch 197, lr: 0.0000015, val loss: 31.98221, acc: 90.45000
 Wed Jun  8 10:26:39 2022 Epoch 198, lr: 0.0000010, val loss: 31.86804, acc: 90.42000
 Wed Jun  8 10:26:50 2022 Epoch 199, lr: 0.0000006, val loss: 31.90562, acc: 90.43000
+Wed Jun  8 10:34:14 2022 Epoch 0, lr: 0.0010000, val loss: 47.57689, acc: 81.91000
+Wed Jun  8 10:37:02 2022 Epoch 0, lr: 0.0010000, val loss: 2652.82803, acc: 0.01000
+Wed Jun  8 10:40:04 2022 Epoch 0, lr: 0.0010000, val loss: 760.66599, acc: 0.00000
+Wed Jun  8 10:44:09 2022 Epoch 0, lr: 0.0010000, val loss: 91.44979, acc: 0.00000
+Wed Jun  8 10:57:27 2022 Epoch 0, lr: 0.0010000, val loss: 103.52094, acc: 0.45000
+Wed Jun  8 11:19:04 2022 Epoch 0, lr: 0.0010000, val loss: 25.32901, acc: 90.54000
+Wed Jun  8 11:29:36 2022 Epoch 0, lr: 0.0010000, val loss: 25.32901, acc: 90.54000
+Wed Jun  8 12:48:53 2022 Epoch 0, lr: 0.0010000, val loss: 25.32901, acc: 90.54000

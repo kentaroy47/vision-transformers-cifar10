@@ -32,6 +32,8 @@ from utils import progress_bar
 from models.convmixer import ConvMixer, ConvMixer_adv
 from randomaug import RandAugment
 
+from autoattack import AutoAttack # adversarial example
+
 
 # transformation
 class pixel_shuffling(object):
@@ -212,8 +214,8 @@ transform_test = transforms.Compose([
     transforms.Resize(size),
     transforms.ToTensor(),
     # block_scrambling(),
-    # pixel_shuffling_new(seed=0),
-    # bit_flipping_new(seed=0),
+    pixel_shuffling_new(seed=0),
+    bit_flipping_new(seed=0),
     # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     # pixel_shuffling(),
@@ -253,10 +255,8 @@ elif args.net=="convmixer":
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
     # checkpoint = torch.load('./checkpoint/convmixer-4-ckpt3.pth', map_location=torch.device('cuda:0'))
     checkpoint = torch.load('./checkpoint/convmixer-p4-epoch200-data-plain-ckpt.pth', map_location=torch.device('cuda:0')) # original model
-    # checkpoint = torch.load('./checkpoint/convmixer2-p4-epoch200-data-all-ckpt.pth', map_location=torch.device('cuda:2')) # with postion_embeddings
     new_checkpoint = {}
     for key in checkpoint.keys():
-        print(key)
         new_checkpoint[key[7:]] = checkpoint[key]
 
     # # pixel shuffling
@@ -283,7 +283,7 @@ elif args.net=="convmixer":
     # tmp[:, key==1] *= -1
     # new_checkpoint['0.weight'] = tmp.reshape((dim, C, H, W))
 
-    net.load_state_dict(new_checkpoint) 
+    net.load_state_dict(new_checkpoint)
     # for param in net.parameters():
     #     print(param.shape, param.names)
 elif args.net=="convmixer_adv":
@@ -300,29 +300,29 @@ elif args.net=="convmixer_adv":
         # print(key)
         new_checkpoint[key[7:]] = checkpoint[key]
 
-    # # pixel shuffling
-    # print(new_checkpoint['patch_embedding.weight'].shape)
+    # pixel shuffling
+    print(new_checkpoint['patch_embedding.weight'].shape)
     
-    # M = 4 # block size = patch size
-    # C = 3 # num of channels
-    # torch.manual_seed(seed=0) # 0 is correct key
-    # key = torch.randperm(M*M*C)
-    # dim, C, H, W = new_checkpoint['patch_embedding.weight'].shape
-    # tmp = new_checkpoint['patch_embedding.weight'].reshape((dim, C*H*W))
-    # tmp = tmp[:, key]
-    # new_checkpoint['patch_embedding.weight'] = tmp.reshape((dim, C, H, W))
+    M = 4 # block size = patch size
+    C = 3 # num of channels
+    torch.manual_seed(seed=0) # 0 is correct key
+    key = torch.randperm(M*M*C)
+    dim, C, H, W = new_checkpoint['patch_embedding.weight'].shape
+    tmp = new_checkpoint['patch_embedding.weight'].reshape((dim, C*H*W))
+    tmp = tmp[:, key]
+    new_checkpoint['patch_embedding.weight'] = tmp.reshape((dim, C, H, W))
 
-    # # bit flipping
-    # print(new_checkpoint['patch_embedding.weight'].shape)
-    # M = 4 # block size = patch size
-    # C = 3 # num of channels
-    # torch.manual_seed(seed=0) # 0 is correct key
-    # key = torch.tensor([i%2 for i in range(M*M*C)])
-    # key = key[torch.randperm(M*M*C)]
-    # dim, C, H, W = new_checkpoint['patch_embedding.weight'].shape
-    # tmp = new_checkpoint['patch_embedding.weight'].reshape((dim, C*H*W))
-    # tmp[:, key==1] *= -1
-    # new_checkpoint['patch_embedding.weight'] = tmp.reshape((dim, C, H, W))
+    # bit flipping
+    print(new_checkpoint['patch_embedding.weight'].shape)
+    M = 4 # block size = patch size
+    C = 3 # num of channels
+    torch.manual_seed(seed=0) # 0 is correct key
+    key = torch.tensor([i%2 for i in range(M*M*C)])
+    key = key[torch.randperm(M*M*C)]
+    dim, C, H, W = new_checkpoint['patch_embedding.weight'].shape
+    tmp = new_checkpoint['patch_embedding.weight'].reshape((dim, C*H*W))
+    tmp[:, key==1] *= -1
+    new_checkpoint['patch_embedding.weight'] = tmp.reshape((dim, C, H, W))
 
     net.load_state_dict(new_checkpoint) 
     # for param in net.parameters():
@@ -452,14 +452,103 @@ def test(epoch):
         appender.write(content + "\n")
     return test_loss, acc
 
-list_loss = []
-list_acc = []
+# adversarial test
+def adversarial_test(epoch, attack_type='apgd-ce'): # attack type: ['apgd-ce', 'apgd-t', 'fab-t', 'square']
+    global best_acc
+    net.eval()
+    test_loss = 0
+    correct = 0
+    total = 0
+
+    adversary = AutoAttack(net, norm='Linf', eps=8/255, version='standard') #
+    adversary.attacks_to_run = [attack_type]
+
+    with torch.no_grad():
+        for batch_idx, (inputs, targets) in enumerate(testloader):
+            inputs, targets = inputs.to(device), targets.to(device)
+            
+            dict_adv = adversary.run_standard_evaluation_individual(inputs, targets, bs=bs) #
+
+            outputs = net(dict_adv[attack_type])
+            loss = criterion(outputs, targets)
+
+            test_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
+            progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+    
+    # Update scheduler
+    if not args.cos:
+        scheduler.step(test_loss)
+    
+    # Save checkpoint.
+    acc = 100.*correct/total
+    print(acc)
+    # if acc > best_acc:
+    #     print('Saving..')
+    #     state = {"model": net.state_dict(),
+    #           "optimizer": optimizer.state_dict(),
+    #           "scaler": scaler.state_dict()}
+    #     if not os.path.isdir('checkpoint'):
+    #         os.mkdir('checkpoint')
+    #     torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
+    #     best_acc = acc
+    
+    os.makedirs("log", exist_ok=True)
+    content = time.ctime() + ' ' + f'Epoch {epoch}, lr: {optimizer.param_groups[0]["lr"]:.7f}, val loss: {test_loss:.5f}, acc: {(acc):.5f}'
+    print(content)
+    with open(f'log/log_{args.net}_patch{args.patch}.txt', 'a') as appender:
+        appender.write(content + "\n")
+    return test_loss, acc
+
+# list_loss = []
+# list_acc = []
 
 wandb.watch(net)
 for epoch in range(start_epoch, args.n_epochs):
     start = time.time()
     # trainloss = train(epoch)
     val_loss, acc = test(epoch)
+    val_loss, acc = adversarial_test(epoch, attack_type='apgd-ce')
+    val_loss, acc = adversarial_test(epoch, attack_type='apgd-t')
+    val_loss, acc = adversarial_test(epoch, attack_type='fab-t')
+    val_loss, acc = adversarial_test(epoch, attack_type='square')
+
+    # # create adversarial example
+    # adversary = AutoAttack(net, norm='Linf', eps=8/255, version='standard')
+    # # adversary.attacks_to_run = ['square']
+    # for batch_idx, (inputs, targets) in enumerate(testloader):
+    #         inputs, targets = inputs.to(device), targets.to(device)
+    #         dict_adv = adversary.run_standard_evaluation_individual(inputs, targets, bs=bs)
+    #         print(type(dict_adv))
+    #         print(inputs.shape)
+    #         torch.set_printoptions(edgeitems=5000)
+    #         print(dict_adv['apgd-ce'][8])
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print(dict_adv['apgd-t'][8])
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print(dict_adv['fab-t'][8])
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print("#############################################")
+    #         print(dict_adv['square'][8])
+    #         # print(dict_adv['apgd-t'].shape)
+    #         # print(dict_adv['fab-t'].shape)
+    #         # print(dict_adv['square'].shape)
+    #         break
 
     # for i in range(101):
     #     print(i)
