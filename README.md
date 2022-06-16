@@ -45,6 +45,7 @@ I use pytorch for implementation.
 | ViT patch=4 Epoch@500 |    88%   | [Log](https://wandb.ai/arutema47/cifar10-challange/reports/Untitled-Report--VmlldzoxNjU3MTU2?accessToken=3y3ib62e8b9ed2m2zb22dze8955fwuhljl5l4po1d5a3u9b7yzek1tz7a0d4i57r) |
 | ViT patch=8 |    30%   | |
 | ViT small  | 80% | |
+| MLP mixer |    88%   | |
 | CaiT  | 80% | |
 | Swin-t  | 90% | |
 | ViT small (timm transfer) | 97.5% | |
