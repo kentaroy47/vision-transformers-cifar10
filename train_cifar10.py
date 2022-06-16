@@ -207,7 +207,9 @@ elif args.net=="swin":
                 num_classes=10,
                 downscaling_factors=(2,2,2,1))
 
-if device == 'cuda':
+if 'cuda' in device:
+    print(device)
+    print("using data parallel")
     net = torch.nn.DataParallel(net) # make parallel
     cudnn.benchmark = True
 
@@ -316,6 +318,7 @@ list_loss = []
 list_acc = []
 
 wandb.watch(net)
+net.cuda()
 for epoch in range(start_epoch, args.n_epochs):
     start = time.time()
     trainloss = train(epoch)
