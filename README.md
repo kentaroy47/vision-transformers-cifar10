@@ -14,23 +14,26 @@ I use pytorch for implementation.
 
 * Added SwinTransformers. (2022/3)
 
+* Added MLP mixer. (2022/6)
 
 # Usage example
-`python train_cifar10.py --lr 1e-4  --aug --n_epochs 200` # vit-patchsize-4
+`python train_cifar10.py --lr 1e-4  --aug --n_epochs 400` # vit-patchsize-4
 
 `python train_cifar10.py --lr 1e-4  --aug --n_epochs 200 --size 48` # vit-patchsize-4-imsize-48
 
 `python train_cifar10.py --patch 2  --lr 1e-4  --aug --n_epochs 200` # vit-patchsize-2
 
-`python train_cifar10.py --net vit_small --lr 1e-4  --aug --n_epochs 200` # vit-small
+`python train_cifar10.py --net vit_small --lr 1e-4  --aug --n_epochs 400` # vit-small
 
 `python train_cifar10.py --net vit_timm --lr 1e-4` # train with pretrained vit
 
-`python train_cifar10.py --net convmixer --aug --n_epochs 200` # train with convmixer
+`python train_cifar10.py --net convmixer --aug --n_epochs 400` # train with convmixer
+
+`python train_cifar10.py --net mlpmixer --lr 1e-4  --aug --n_epochs 400` # vit-small
 
 `python train_cifar10.py --net cait --lr 1e-4  --aug --n_epochs 200` # train with cait
 
-`python train_cifar10.py --net swin --lr 1e-4  --aug --n_epochs 200` # train with SwinTransformers
+`python train_cifar10.py --net swin --lr 1e-4  --aug --n_epochs 400` # train with SwinTransformers
 
 `python train_cifar10.py --net res18` # resnet18
 
