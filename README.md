@@ -16,6 +16,8 @@ I use pytorch for implementation.
 
 * Added MLP mixer. (2022/6)
 
+* Changed default training settings for ViT.
+
 # Usage example
 `python train_cifar10.py --lr 1e-4  --aug --n_epochs 400` # vit-patchsize-4
 
