@@ -1,3 +1,5 @@
+# https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/cait.py
+
 from random import randrange
 import torch
 from torch import nn, einsum
