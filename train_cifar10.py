@@ -25,46 +25,44 @@ import csv
 import time
 
 from models import *
-from models.vit import ViT
 from utils import progress_bar
-from models.convmixer import ConvMixer
 from randomaug import RandAugment
+from models.vit import ViT
+from models.convmixer import ConvMixer
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-3, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--aug', action='store_true', help='use randomaug')
-parser.add_argument('--amp', action='store_true', help='enable AMP training')
+parser.add_argument('--noaug', action='store_true', help='disable use randomaug')
+parser.add_argument('--noamp', action='store_true', help='disable mixed precision training. for older pytorch versions')
+parser.add_argument('--nowandb', action='store_true', help='disable wandb')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
-parser.add_argument('--bs', default='256')
+parser.add_argument('--bs', default='512')
 parser.add_argument('--size', default="32")
-parser.add_argument('--n_epochs', type=int, default='50')
-parser.add_argument('--patch', default='4', type=int)
+parser.add_argument('--n_epochs', type=int, default='200')
+parser.add_argument('--patch', default='4', type=int, help="patch for ViT")
 parser.add_argument('--dimhead', default="512", type=int)
-parser.add_argument('--convkernel', default='8', type=int)
-parser.add_argument('--cos', action='store_false', help='Train with cosine annealing scheduling')
+parser.add_argument('--convkernel', default='8', type=int, help="parameter for convmixer")
 
 args = parser.parse_args()
 
 # take in args
-import wandb
-watermark = "{}_lr{}".format(args.net, args.lr)
-if args.amp:
-    watermark += "_useamp"
+usewandb = ~args.nowandb
+if usewandb:
+    import wandb
+    watermark = "{}_lr{}".format(args.net, args.lr)
+    wandb.init(project="cifar10-challange",
+            name=watermark)
+    wandb.config.update(args)
 
-wandb.init(project="cifar10-challange",
-           name=watermark)
-wandb.config.update(args)
-
-if args.aug:
-    import albumentations
 bs = int(args.bs)
 imsize = int(args.size)
 
-use_amp = args.amp
+use_amp = bool(~args.noamp)
+aug = args.noaug
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
@@ -76,6 +74,7 @@ if args.net=="vit_timm":
     size = 384
 else:
     size = imsize
+
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.Resize(size),
@@ -91,10 +90,11 @@ transform_test = transforms.Compose([
 ])
 
 # Add RandAugment with N, M(hyperparameter)
-if args.aug:  
+if aug:  
     N = 2; M = 14;
     transform_train.transforms.insert(0, RandAugment(N, M))
 
+# Prepare dataset
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
@@ -103,7 +103,7 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False,
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-# Model
+# Model factory..
 print('==> Building model..')
 # net = VGG('VGG19')
 if args.net=='res18':
@@ -132,6 +132,19 @@ elif args.net=="vit_small":
     dropout = 0.1,
     emb_dropout = 0.1
 )
+elif args.net=="vit_tiny":
+    from models.vit_small import ViT
+    net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
+    depth = 4,
+    heads = 6,
+    mlp_dim = 256,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
 elif args.net=="simplevit":
     from models.simplevit import SimpleViT
     net = SimpleViT(
@@ -143,7 +156,6 @@ elif args.net=="simplevit":
     heads = 8,
     mlp_dim = 512
 )
-
 elif args.net=="vit":
     # ViT for cifar10
     net = ViT(
@@ -197,6 +209,7 @@ elif args.net=="swin":
                 num_classes=10,
                 downscaling_factors=(2,2,2,1))
 
+# For Multi-GPU
 if device == 'cuda':
     net = torch.nn.DataParallel(net) # make parallel
     cudnn.benchmark = True
@@ -218,17 +231,8 @@ if args.opt == "adam":
 elif args.opt == "sgd":
     optimizer = optim.SGD(net.parameters(), lr=args.lr)  
     
-# use cosine or reduce LR on Plateau scheduling
-if not args.cos:
-    from torch.optim import lr_scheduler
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3, verbose=True, min_lr=1e-3*1e-5, factor=0.1)
-else:
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs)
-
-if args.cos:
-    wandb.config.scheduler = "cosine"
-else:
-    wandb.config.scheduler = "ReduceLROnPlateau"
+# use cosine scheduling
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.n_epochs)
 
 ##### Training
 scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
@@ -279,10 +283,6 @@ def test(epoch):
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                 % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
     
-    # Update scheduler
-    if not args.cos:
-        scheduler.step(test_loss)
-    
     # Save checkpoint.
     acc = 100.*correct/total
     if acc > best_acc:
@@ -305,20 +305,21 @@ def test(epoch):
 list_loss = []
 list_acc = []
 
-wandb.watch(net)
+if usewandb:
+    wandb.watch(net)
 for epoch in range(start_epoch, args.n_epochs):
     start = time.time()
     trainloss = train(epoch)
     val_loss, acc = test(epoch)
     
-    if args.cos:
-        scheduler.step(epoch-1)
+    scheduler.step(epoch-1) # step cosine scheduling
     
     list_loss.append(val_loss)
     list_acc.append(acc)
     
     # Log training..
-    wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
+    if usewandb:
+        wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
         "epoch_time": time.time()-start})
 
     # Write out csv..
@@ -329,5 +330,6 @@ for epoch in range(start_epoch, args.n_epochs):
     print(list_loss)
 
 # writeout wandb
-wandb.save("wandb_{}.h5".format(args.net))
+if usewandb:
+    wandb.save("wandb_{}.h5".format(args.net))
     
