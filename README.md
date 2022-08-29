@@ -31,7 +31,7 @@ I use pytorch for implementation.
 
 `python train_cifar10.py --net convmixer --n_epochs 400` # train with convmixer
 
-`python train_cifar10.py --net mlpmixer --n_epochs 400` # vit-small
+`python train_cifar10.py --net mlpmixer --n_epochs 500 --aug --lr 1e-3`
 
 `python train_cifar10.py --net cait --n_epochs 200` # train with cait
 
