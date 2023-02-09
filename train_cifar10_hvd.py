@@ -32,6 +32,7 @@ from models.convmixer import ConvMixer
 
 import musa_torch_extension
 import horovod.torch as hvd
+import random
 import pdb
 
 # parsers
@@ -48,6 +49,7 @@ parser.add_argument('--bs', default='512')
 parser.add_argument('--size', default="32")
 parser.add_argument('--device', default="mtgpu", type=str)
 parser.add_argument('--n_epochs', type=int, default='200')
+parser.add_argument('--seed', type=int, default='121')
 parser.add_argument('--patch', default='4', type=int, help="patch for ViT")
 parser.add_argument('--dimhead', default="512", type=int)
 parser.add_argument('--convkernel', default='8', type=int, help="parameter for convmixer")
@@ -74,6 +76,16 @@ aug = args.noaug
 device = args.device
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
+
+hvd.init()
+if device == "cuda":
+    torch.cuda.set_device(hvd.local_rank())
+    cudnn.benchmark = True
+    torch.cuda.manual_seed(seed)
+seed = args.seed + hvd.rank()
+torch.manual_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
 
 # Data
 print('==> Preparing data..')
