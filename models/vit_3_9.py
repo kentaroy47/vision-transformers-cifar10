@@ -2,7 +2,7 @@
 
 import torch
 from torch import nn
-
+#import numpy as np
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 
@@ -16,7 +16,7 @@ def pair(t):
 class PreNorm(nn.Module):
     def __init__(self, dim, fn):
         super().__init__()
-        self.norm = nn.LayerNorm(dim) 
+        self.norm = nn.LayerNorm(dim)
         self.fn = fn
     def forward(self, x, **kwargs):
         return self.fn(self.norm(x), **kwargs)
@@ -54,17 +54,15 @@ class Attention(nn.Module):
     def forward(self, x):
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
-        print('q:',q.size())
-        print('k:',k.size())
-        print('v:',v.size())
+
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
-        print(dots.size())
-        attn = self.attend(dots)
-        print('attn:',attn.size())
-        out = torch.matmul(attn, v)
-        print('out:',out.size())
+        #print("test")
+        #attn = self.(dots)
+        #changes here. replace softmax with ones
+        #attn = torch.ones(1,dots.size(dim=1)).cuda()       
+        #attn = torch.matmul(attn,dots).cuda()
+        out = torch.matmul(dots, v)
         out = rearrange(out, 'b h n d -> b n (h d)')
-        print('out1:',out.size())
         return self.to_out(out)
 
 class Transformer(nn.Module):

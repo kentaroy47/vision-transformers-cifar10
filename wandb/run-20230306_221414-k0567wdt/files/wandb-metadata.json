@@ -1,0 +1,42 @@
+{
+    "os": "Windows-10-10.0.19044-SP0",
+    "python": "3.8.10",
+    "heartbeatAt": "2023-03-06T14:14:15.405886",
+    "startedAt": "2023-03-06T14:14:14.526503",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "train_cifar10.py",
+    "codePath": "train_cifar10.py",
+    "git": {
+        "remote": "https://github.com/Charles-YUAN-MA/vision-transformers-cifar10.git",
+        "commit": "f5b4afa12974afd9462951838b1768cabd16480e"
+    },
+    "email": "74038562+Charles-YUAN-MA@users.noreply.github.com",
+    "root": "C:/Users/yang/Documents/GitHub/vision-transformers-cifar10",
+    "host": "LAPTOP-D5BG7EAU",
+    "username": "yang",
+    "executable": "C:\\Users\\yang\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.8_qbz5n2kfra8p0\\python.exe",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 1609.0,
+        "min": 0.0,
+        "max": 2112.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1609.0,
+            "min": 0.0,
+            "max": 2112.0
+        }
+    ],
+    "disk": {
+        "total": 475.69237899780273,
+        "used": 261.4607162475586
+    },
+    "memory": {
+        "total": 7.7613525390625
+    }
+}

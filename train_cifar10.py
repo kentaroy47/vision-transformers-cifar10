@@ -33,13 +33,17 @@ from models.convmixer import ConvMixer
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4
+#parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--noaug', action='store_true', help='disable use randomaug')
 parser.add_argument('--noamp', action='store_true', help='disable mixed precision training. for older pytorch versions')
 parser.add_argument('--nowandb', action='store_true', help='disable wandb')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
-parser.add_argument('--net', default='vit')
+#parser.add_argument('--net', default='vit_3_19')
+#parser.add_argument('--net', default='vit_origin_depth1')
+parser.add_argument('--net', default='vit_3_19')
+#parser.add_argument('--net', default='vit')
 parser.add_argument('--bs', default='512')
 parser.add_argument('--size', default="32")
 parser.add_argument('--n_epochs', type=int, default='200')
@@ -173,6 +177,63 @@ elif args.net=="vit":
     patch_size = args.patch,
     num_classes = 10,
     dim = int(args.dimhead),
+    depth = 6,#from simple
+    heads = 8,
+    mlp_dim = 512,
+    dropout = 0.1,#
+    emb_dropout = 0.1
+)
+elif args.net=="vit_3_9":
+    # ViT for cifar10 modified on March 9
+    from models.vit_3_9 import ViT
+    net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
+    depth = 6,
+    heads = 8,
+    mlp_dim = 512,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
+elif args.net=="vit_origin_depth1":
+    # ViT for cifar10 modified on March 19
+    from models.vit import ViT
+    net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
+    depth = 1,
+    heads = 8,
+    mlp_dim = 512,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
+
+elif args.net=="vit_3_19":
+    # ViT for cifar10 modified on March 19
+    from models.vit_3_9 import ViT
+    net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
+    depth = 1,
+    heads = 8,
+    mlp_dim = 512,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
+elif args.net=="vit_3_19_prime":
+    # ViT for cifar10 modified on March 19
+    from models.vit_3_19 import ViT
+    net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = 10,
+    dim = int(args.dimhead),
     depth = 6,
     heads = 8,
     mlp_dim = 512,
@@ -220,11 +281,13 @@ elif args.net=="swin":
                 downscaling_factors=(2,2,2,1))
 
 # For Multi-GPU
+'''
 if 'cuda' in device:
     print(device)
     print("using data parallel")
     net = torch.nn.DataParallel(net) # make parallel
     cudnn.benchmark = True
+'''
 
 if args.resume:
     # Load checkpoint.
@@ -263,6 +326,25 @@ def train(epoch):
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
+
+
+        for atten in net.transformer.layers:
+            attens, _ = atten 
+            attens.fn.to_qkv.weight.data.clamp(0,1) 
+            max = attens.fn.to_qkv.weight.data.max().detach().numpy()
+            min = attens.fn.to_qkv.weight.data.min().detach().numpy()
+            mean = attens.fn.to_qkv.weight.data.mean().detach().numpy()        
+
+        for atten in net.transformer.layers:
+            attens, _ = atten 
+            attens.fn.to_qkv.weight.data.clamp(0,1) 
+        if net.depth == 1:
+            for atten in net.transformer.layers:
+                attens, _ = atten 
+                attens.fn.to_qkv.weight.data.clamp(0,1) 
+                max = attens.fn.to_qkv.weight.data.max().detach().numpy()
+                mix = attens.fn.to_qkv.weight.data.mix().detach().numpy()
+                mean = attens.fn.to_qkv.weight.data.mean().detach().numpy()
         optimizer.zero_grad()
 
         train_loss += loss.item()
@@ -272,7 +354,7 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
-    return train_loss/(batch_idx+1)
+    return train_loss/(batch_idx+1),max,min,mean
 
 ##### Validation
 def test(epoch):
@@ -319,11 +401,11 @@ list_acc = []
 
 if usewandb:
     wandb.watch(net)
-    
-net.cuda()
+net.to('cuda')    
+net.cuda()  
 for epoch in range(start_epoch, args.n_epochs):
     start = time.time()
-    trainloss = train(epoch)
+    trainloss,max,min,mean = train(epoch)
     val_loss, acc = test(epoch)
     
     scheduler.step(epoch-1) # step cosine scheduling
@@ -334,7 +416,7 @@ for epoch in range(start_epoch, args.n_epochs):
     # Log training..
     if usewandb:
         wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
-        "epoch_time": time.time()-start})
+        "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min})
 
     # Write out csv..
     with open(f'log/log_{args.net}_patch{args.patch}.csv', 'w') as f:
