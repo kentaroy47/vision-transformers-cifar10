@@ -11,6 +11,13 @@ from einops.layers.torch import Rearrange
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
+'''
+class Get_Softmax_info:
+    def __init__():
+        self
+'''    
+
+
 # classes
 
 class PreNorm(nn.Module):
@@ -34,6 +41,7 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+
 class Attention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
         super().__init__()
@@ -42,7 +50,9 @@ class Attention(nn.Module):
 
         self.heads = heads
         self.scale = dim_head ** -0.5
-
+        #self.scale = dim_head ** -1
+        self.before = []
+        self.after = []
         self.attend = nn.Softmax(dim = -1)
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
 
@@ -54,17 +64,34 @@ class Attention(nn.Module):
     def forward(self, x):
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
-        print('q:',q.size())
-        print('k:',k.size())
-        print('v:',v.size())
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
-        print(dots.size())
+        
+        
+        # capture dots' min max mean sum before softmax
+        self.before = []
+        self.after = []
+        min = dots.min().cpu().detach().numpy()
+        max = dots.max().cpu().detach().numpy()
+        mean = dots.mean().cpu().detach().numpy()
+        #sum = dots.sum(dim=-1).cpu().detach().numpy()
+        self.before.append(min)
+        self.before.append(max)
+        self.before.append(mean)
+
+
         attn = self.attend(dots)
-        print('attn:',attn.size())
+        
+        min = attn.min().cpu().detach().numpy()
+        max = attn.max().cpu().detach().numpy()
+        mean = attn.mean().cpu().detach().numpy()
+        #sum = attn.sum(dim=-1).cpu().detach().numpy()
+
+        self.after.append(min)
+        self.after.append(max)
+        self.after.append(mean)
+
         out = torch.matmul(attn, v)
-        print('out:',out.size())
         out = rearrange(out, 'b h n d -> b n (h d)')
-        print('out1:',out.size())
         return self.to_out(out)
 
 class Transformer(nn.Module):

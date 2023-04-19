@@ -26,9 +26,14 @@ import time
 
 from models import *
 from utils import progress_bar
+from utils import project_onto_l1_ball
 from randomaug import RandAugment
 from models.vit import ViT
 from models.convmixer import ConvMixer
+
+
+from einops import rearrange, repeat
+from einops.layers.torch import Rearrange
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
@@ -40,16 +45,21 @@ parser.add_argument('--noaug', action='store_true', help='disable use randomaug'
 parser.add_argument('--noamp', action='store_true', help='disable mixed precision training. for older pytorch versions')
 parser.add_argument('--nowandb', action='store_true', help='disable wandb')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
-#parser.add_argument('--net', default='vit_3_19')
-#parser.add_argument('--net', default='vit_origin_depth1')
-parser.add_argument('--net', default='vit_3_19')
-#parser.add_argument('--net', default='vit')
+parser.add_argument('--net', default='vit_3_9')
 parser.add_argument('--bs', default='512')
 parser.add_argument('--size', default="32")
 parser.add_argument('--n_epochs', type=int, default='200')
 parser.add_argument('--patch', default='4', type=int, help="patch for ViT")
 parser.add_argument('--dimhead', default="512", type=int)
 parser.add_argument('--convkernel', default='8', type=int, help="parameter for convmixer")
+
+parser.add_argument('--clamp', default=False, type=bool)
+parser.add_argument('--clamp_bottom', default="0", type=float)
+parser.add_argument('--clamp_ceil', default="1", type=float)
+
+parser.add_argument('--l1_constraint', default=True, type=bool)
+parser.add_argument('--q_eps', default="10000", type=float)
+parser.add_argument('--k_eps', default="10000", type=float)
 
 args = parser.parse_args()
 
@@ -314,6 +324,10 @@ scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 def train(epoch):
     print('\nEpoch: %d' % epoch)
     net.train()
+    #from models.vit import before_info
+    #from models.vit import after_info
+    q_norm =[]
+    k_norm =[]
     train_loss = 0
     correct = 0
     total = 0
@@ -326,27 +340,64 @@ def train(epoch):
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-
-
         for atten in net.transformer.layers:
-            attens, _ = atten 
-            attens.fn.to_qkv.weight.data.clamp(0,1) 
-            max = attens.fn.to_qkv.weight.data.max().detach().numpy()
-            min = attens.fn.to_qkv.weight.data.min().detach().numpy()
-            mean = attens.fn.to_qkv.weight.data.mean().detach().numpy()        
+            attens, _ = atten
+            
+            before = attens.fn.before
+            after = attens.fn.after 
 
-        for atten in net.transformer.layers:
-            attens, _ = atten 
             attens.fn.to_qkv.weight.data.clamp(0,1) 
-        if net.depth == 1:
+            max = attens.fn.to_qkv.weight.data.max().cpu().detach().numpy()
+            min = attens.fn.to_qkv.weight.data.min().cpu().detach().numpy()
+            mean = attens.fn.to_qkv.weight.data.mean().cpu().detach().numpy()        
+
+        if args.clamp:
             for atten in net.transformer.layers:
                 attens, _ = atten 
-                attens.fn.to_qkv.weight.data.clamp(0,1) 
-                max = attens.fn.to_qkv.weight.data.max().detach().numpy()
-                mix = attens.fn.to_qkv.weight.data.mix().detach().numpy()
-                mean = attens.fn.to_qkv.weight.data.mean().detach().numpy()
-        optimizer.zero_grad()
+                attens.fn.to_qkv.weight.data = attens.fn.to_qkv.weight.data.clamp(args.clamp_bottom,args.clamp_ceil)
+                
+        if args.l1_constraint:
+            for atten in net.transformer.layers:
+                attens, _ = atten     
+                
+                qkv = attens.fn.to_qkv.weight.chunk(3, dim = 0)
 
+                m = qkv[0].shape
+                print('q.shape:',m)      
+                m = qkv[1].shape
+                print('k.shape:',m)
+                m = qkv[2].shape 
+                print('v.shape:',m)
+                q,k,v = qkv
+                print("test1")
+                #q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = 8), qkv)
+                d = q.shape[-1]
+                print("test2")
+                b = q.shape[0]
+                print("test3")
+                q1 = []
+                print("q1")
+                print(q)
+                q1 = q.clone()
+                print("test4")
+                for i in range(b):
+                    q_norm.append(torch.norm(q[i,:],p=1))
+                    m = project_onto_l1_ball(q[i,:],args.q_eps)
+                    #print("q_projection_shape",m.shape)
+                    for j in range(d):
+                        q1[i,j] = m[j]
+                k_norm.append(torch.norm(k,p=1))
+                k1 = k.clone()
+                m = project_onto_l1_ball(k,args.k_eps)
+                k1 = m
+                
+                m = torch.cat((q1,k1,v),dim = 0)
+                print("new_m")
+                print(m.shape)
+                attens.fn.to_qkv.weight.data = m
+            
+        optimizer.zero_grad()
+        print("optimizer.zero_grad()")
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
@@ -354,8 +405,10 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
-    return train_loss/(batch_idx+1),max,min,mean
-
+    if args.l1_constraint:
+        return train_loss/(batch_idx+1),max,min,mean,before,after,q_norm.mean(),k_norm.mean()
+    else:
+        return train_loss/(batch_idx+1),max,min,mean,before,after
 ##### Validation
 def test(epoch):
     global best_acc
@@ -404,20 +457,35 @@ if usewandb:
 net.to('cuda')    
 net.cuda()  
 for epoch in range(start_epoch, args.n_epochs):
+    before_info = []
+    after_info = []
     start = time.time()
-    trainloss,max,min,mean = train(epoch)
+    if args.l1_constraint:
+        trainloss,max,min,mean,before, after, q_norm_mean,k_norm_mean = train(epoch)
+    else:
+        trainloss,max,min,mean,before, after = train(epoch)
     val_loss, acc = test(epoch)
     
     scheduler.step(epoch-1) # step cosine scheduling
     
     list_loss.append(val_loss)
     list_acc.append(acc)
-    
+    before_min, before_max, before_mean = before
+    after_min, after_max, after_mean = after    
     # Log training..
+    
     if usewandb:
-        wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
-        "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min})
-
+        if args.net == 'vit':
+            if args.l1_constraint:
+                wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
+        "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min,"before_min":before_min,"before_max":before_max,"before_mean":before_mean,
+        "after_min":after_min,"after_max":after_max,"after_mean":after_mean, "q_norm_mean":q_norm_mean,"k_norm_mean":k_norm_mean})
+            else:
+                wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
+        "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min,"before_min":before_min,"before_max":before_max,"before_mean":before_mean,"after_min":after_min,"after_max":after_max,"after_mean":after_mean})
+        else:
+             wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
+        "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min,"before_min":before_min,"before_max":before_max,"before_mean":before_mean,"matrix_after_min":after_min,"matrix_after_max":after_max,"matrix_after_mean":after_mean})           
     # Write out csv..
     with open(f'log/log_{args.net}_patch{args.patch}.csv', 'w') as f:
         writer = csv.writer(f, lineterminator='\n')

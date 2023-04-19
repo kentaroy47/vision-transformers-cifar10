@@ -53,15 +53,37 @@ class Attention(nn.Module):
 
     def forward(self, x):
         qkv = self.to_qkv(x).chunk(3, dim = -1)
+        m = qkv[0].shape
+        #print("qkv_shape",m)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
-
+        m = q.shape
+        #print("q_shape",m)
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
         #print("test")
         #attn = self.(dots)
         #changes here. replace softmax with ones
         #attn = torch.ones(1,dots.size(dim=1)).cuda()       
         #attn = torch.matmul(attn,dots).cuda()
+
+        self.before = []
+        self.after = []
+        min = dots.min().cpu().detach().numpy()
+        max = dots.max().cpu().detach().numpy()
+        mean = dots.mean().cpu().detach().numpy()
+        self.before.append(min)
+        self.before.append(max)
+        self.before.append(mean)
+
         out = torch.matmul(dots, v)
+        min = out.min().cpu().detach().numpy()
+        max = out.max().cpu().detach().numpy()
+        mean = out.mean().cpu().detach().numpy()
+        #sum = attn.sum(dim=-1).cpu().detach().numpy()
+
+        self.after.append(min)
+        self.after.append(max)
+        self.after.append(mean)
+        
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)
 
@@ -95,6 +117,7 @@ class ViT(nn.Module):
         self.to_patch_embedding = nn.Sequential(
             Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
             nn.Linear(patch_dim, dim),
+            # batch size * (# height batch * # width bathc) * (dim of patch embedding)
         )
 
         self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
@@ -114,7 +137,8 @@ class ViT(nn.Module):
     def forward(self, img):
         x = self.to_patch_embedding(img)
         b, n, _ = x.shape
-
+        # b: batch size
+        # n: the total number of non-overlapping patches in the image
         cls_tokens = repeat(self.cls_token, '() n d -> b n d', b = b)
         x = torch.cat((cls_tokens, x), dim=1)
         x += self.pos_embedding[:, :(n + 1)]
