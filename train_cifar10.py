@@ -58,8 +58,8 @@ parser.add_argument('--clamp_bottom', default="0", type=float)
 parser.add_argument('--clamp_ceil', default="1", type=float)
 
 parser.add_argument('--l1_constraint', default=True, type=bool)
-parser.add_argument('--q_eps', default="10000", type=float)
-parser.add_argument('--k_eps', default="10000", type=float)
+parser.add_argument('--q_eps', default="0.0442", type=float)
+parser.add_argument('--k_eps', default="0.0625", type=float)
 
 args = parser.parse_args()
 
@@ -361,43 +361,56 @@ def train(epoch):
                 attens, _ = atten     
                 
                 qkv = attens.fn.to_qkv.weight.chunk(3, dim = 0)
-
+                '''
                 m = qkv[0].shape
                 print('q.shape:',m)      
                 m = qkv[1].shape
                 print('k.shape:',m)
                 m = qkv[2].shape 
                 print('v.shape:',m)
+                '''
                 q,k,v = qkv
-                print("test1")
                 #q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = 8), qkv)
-                d = q.shape[-1]
-                print("test2")
+                '''
+                d = q.shape[1]
                 b = q.shape[0]
-                print("test3")
-                q1 = []
-                print("q1")
-                print(q)
                 q1 = q.clone()
-                print("test4")
                 for i in range(b):
-                    q_norm.append(torch.norm(q[i,:],p=1))
+                    #print('q_norm',torch.norm(q[i,:],p=1))
+                    #q_norm.append(torch.norm(q[i,:],p=1))
                     m = project_onto_l1_ball(q[i,:],args.q_eps)
                     #print("q_projection_shape",m.shape)
                     for j in range(d):
                         q1[i,j] = m[j]
-                k_norm.append(torch.norm(k,p=1))
-                k1 = k.clone()
-                m = project_onto_l1_ball(k,args.k_eps)
-                k1 = m
+                #print('k_norm',torch.norm(k,p=1))
+                #k_norm.append(torch.norm(k,p=1))
+                '''
+                
+                
+                print('q_norm',torch.norm(q,p=1))
+
+                q1 = project_onto_l1_ball(q,args.q_eps)
+                #q1 = m
+                print('q1_norm',torch.norm(q1,p=1))
+                
+                #k1 = k.clone
+                print('k_norm',torch.norm(k,p=1))
+                k1 = k[0]
+                for i in range(k.shape[0]-1):
+                    k1 = torch.cat((k1,k[i+1]),0)
+                
+                m = project_onto_l1_ball(k1.unsqueeze(0),args.k_eps).squeeze(0).chunk(512,dim=0)
+                k1 = torch.transpose(torch.stack(m,1),0,1)
+                #k1 = m
+                print('k1_norm',torch.norm(k1,p=1))
                 
                 m = torch.cat((q1,k1,v),dim = 0)
-                print("new_m")
-                print(m.shape)
+                #print("new_m")
+                #print(m.shape)
                 attens.fn.to_qkv.weight.data = m
             
         optimizer.zero_grad()
-        print("optimizer.zero_grad()")
+        #print("optimizer.zero_grad()")
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
@@ -405,10 +418,13 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+    '''        
     if args.l1_constraint:
-        return train_loss/(batch_idx+1),max,min,mean,before,after,q_norm.mean(),k_norm.mean()
+        return train_loss/(batch_idx+1),max,min,mean,before,after,sum(q_norm)/len(q_norm),sum(k_norm)/len(k_norm)
     else:
-        return train_loss/(batch_idx+1),max,min,mean,before,after
+    '''
+    
+    return train_loss/(batch_idx+1),max,min,mean,before,after
 ##### Validation
 def test(epoch):
     global best_acc
@@ -460,10 +476,12 @@ for epoch in range(start_epoch, args.n_epochs):
     before_info = []
     after_info = []
     start = time.time()
+    '''
     if args.l1_constraint:
         trainloss,max,min,mean,before, after, q_norm_mean,k_norm_mean = train(epoch)
     else:
-        trainloss,max,min,mean,before, after = train(epoch)
+    '''
+    trainloss,max,min,mean,before, after = train(epoch)
     val_loss, acc = test(epoch)
     
     scheduler.step(epoch-1) # step cosine scheduling
@@ -476,15 +494,17 @@ for epoch in range(start_epoch, args.n_epochs):
     
     if usewandb:
         if args.net == 'vit':
+            '''
             if args.l1_constraint:
                 wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
         "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min,"before_min":before_min,"before_max":before_max,"before_mean":before_mean,
         "after_min":after_min,"after_max":after_max,"after_mean":after_mean, "q_norm_mean":q_norm_mean,"k_norm_mean":k_norm_mean})
             else:
-                wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
+            '''
+            wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
         "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min,"before_min":before_min,"before_max":before_max,"before_mean":before_mean,"after_min":after_min,"after_max":after_max,"after_mean":after_mean})
         else:
-             wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
+            wandb.log({'epoch': epoch, 'train_loss': trainloss, 'val_loss': val_loss, "val_acc": acc, "lr": optimizer.param_groups[0]["lr"],
         "epoch_time": time.time()-start,"matrix_max":max,"matrix_mean":mean,"matrix_min":min,"before_min":before_min,"before_max":before_max,"before_mean":before_mean,"matrix_after_min":after_min,"matrix_after_max":after_max,"matrix_after_mean":after_mean})           
     # Write out csv..
     with open(f'log/log_{args.net}_patch{args.patch}.csv', 'w') as f:
