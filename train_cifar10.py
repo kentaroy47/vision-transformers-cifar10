@@ -61,17 +61,23 @@ parser.add_argument('--l1_constraint', default=True, type=bool)
 parser.add_argument('--q_eps', default="0.0442", type=float)
 parser.add_argument('--k_eps', default="0.0625", type=float)
 
+parser.add_argument('--dataset',default='cifar10',help='cifar10 and cifar100 are supported')
+
 args = parser.parse_args()
 
 # take in args
 usewandb = ~args.nowandb
 if usewandb:
-    import wandb
-    watermark = "{}_lr{}".format(args.net, args.lr)
+    import wandb    
+    watermark = "{}_lr{}_{}".format(args.net, args.lr,args.dataset)
     wandb.init(project="cifar10-challange",
             name=watermark)
     wandb.config.update(args)
 
+if args.dataset == 'cifar10':
+    no_classes=10
+elif args.dataset == 'cifar100':
+    no_classes=100
 bs = int(args.bs)
 imsize = int(args.size)
 
@@ -109,13 +115,19 @@ if aug:
     transform_train.transforms.insert(0, RandAugment(N, M))
 
 # Prepare dataset
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+if args.dataset == 'cifar10':
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+elif args.dataset == 'cifar100':
+    trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+if args.dataset == 'cifar10':
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+elif args.dataset == 'cifar100':
+    testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
 
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+#classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 # Model factory..
 print('==> Building model..')
@@ -141,14 +153,14 @@ elif args.net=="mlpmixer":
     patch_size = args.patch,
     dim = 512,
     depth = 6,
-    num_classes = 10
+    num_classes = no_classes
 )
 elif args.net=="vit_small":
     from models.vit_small import ViT
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -161,7 +173,7 @@ elif args.net=="vit_tiny":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 4,
     heads = 6,
@@ -174,7 +186,7 @@ elif args.net=="simplevit":
     net = SimpleViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -185,7 +197,7 @@ elif args.net=="vit":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 6,#from simple
     heads = 8,
@@ -199,7 +211,7 @@ elif args.net=="vit_3_9":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -213,7 +225,7 @@ elif args.net=="vit_origin_depth1":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 1,
     heads = 8,
@@ -228,7 +240,7 @@ elif args.net=="vit_3_19":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 1,
     heads = 8,
@@ -242,7 +254,7 @@ elif args.net=="vit_3_19_prime":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -259,7 +271,7 @@ elif args.net=="cait":
     net = CaiT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 6,   # depth of transformer for patch to patch attention only
     cls_depth=2, # depth of cross attention of CLS tokens to patch
@@ -274,7 +286,7 @@ elif args.net=="cait_small":
     net = CaiT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = no_classes,
     dim = int(args.dimhead),
     depth = 6,   # depth of transformer for patch to patch attention only
     cls_depth=2, # depth of cross attention of CLS tokens to patch
