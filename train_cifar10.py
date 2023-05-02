@@ -61,6 +61,8 @@ parser.add_argument('--l1_constraint', default=True, type=bool)
 parser.add_argument('--q_eps', default="0.0442", type=float)
 parser.add_argument('--k_eps', default="0.0625", type=float)
 
+parser.add_argument('--depth', default="6", type=int)
+
 parser.add_argument('--dataset',default='cifar10',help='cifar10 and cifar100 are supported')
 
 args = parser.parse_args()
@@ -199,7 +201,7 @@ elif args.net=="vit":
     patch_size = args.patch,
     num_classes = no_classes,
     dim = int(args.dimhead),
-    depth = 6,#from simple
+    depth = args.depth,#from simple
     heads = 8,
     mlp_dim = 512,
     dropout = 0.1,#
@@ -213,7 +215,7 @@ elif args.net=="vit_3_9":
     patch_size = args.patch,
     num_classes = no_classes,
     dim = int(args.dimhead),
-    depth = 6,
+    depth = args.depth,
     heads = 8,
     mlp_dim = 512,
     dropout = 0.1,

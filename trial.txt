@@ -1,0 +1,35 @@
+///4.23
+1350630 q_eps =0.0442 k_eps =0.0625
+1350631 q_eps =0.002   k_eps =0.0625
+135063 q_eps =0.002   k_eps =1
+1350633 1 1 with transpose
+1350635 q_eps =0.0442 k_eps 1 with transpose #the best 73.7%
+1350636 q_eps =0.0442 k_eps =0.0625 with transpose
+1350639 q_eps =0.002 k_eps =0.0625 with transpose
+1350640 q_eps =0.002 k_eps =1 with transpose
+
+///4.24
+1351248 q_eps =0.0442 k_eps =1.414214 with transpose
+1351249 q_eps =0.0442 k_eps =1.732 with transpose
+1351251 q_eps =0.0442 k_eps =2 with transpose
+1351252 q_eps =0.0442 k_eps =4 with transpose
+1351253 q_eps =0.0442 k_eps =6 with transpose
+1351254 q_eps =0.0442 k_eps =8 with transpose
+1351255 q_eps =0.0442 k_eps =10 with transpose
+1351258 q_eps =0.0442 k_eps =12 with transpose
+1351259 q_eps =0.0442 k_eps =14 with transpose #the best 76.7%
+1351260 q_eps =0.0442 k_eps =16 with transpose
+1351261 q_eps =0.0442 k_eps =18 with transpose
+1351262 q_eps =0.0442 k_eps =20 with transpose
+
+q_eps =0.0442 k_eps =15 with transpose
+q_eps =0.0221 k_eps =15 with transpose
+q_eps =0.03125 k_eps =15 with transpose
+q_eps =0.002 k_eps =15 with transpose
+q_eps =0.0221 k_eps =14 with transpose
+q_eps =0.03125 k_eps =14 with transpose
+q_eps =0.002 k_eps =14'' with transpose
+
+
+
+

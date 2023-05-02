@@ -66,7 +66,6 @@ class Attention(nn.Module):
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
         
-        
         # capture dots' min max mean sum before softmax
         self.before = []
         self.after = []
