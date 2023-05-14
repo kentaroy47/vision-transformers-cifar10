@@ -342,6 +342,7 @@ def train(epoch):
     #from models.vit import after_info
     q_norm =[]
     k_norm =[]
+    diffnorm = []
     train_loss = 0
     correct = 0
     total = 0
@@ -354,12 +355,13 @@ def train(epoch):
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-        for atten in net.transformer.layers:
-            attens, _ = atten
-            
+        for i in range(len(net.transformer.layers)):
+            attens, _ = net.transformer.layers[i]
+            #print('before')
             before = attens.fn.before
-            after = attens.fn.after 
-
+            after = attens.fn.after
+            #print('i',i) 
+            diffnorm.append([i, attens.fn.diffnorm.cpu().detach().numpy()])
             attens.fn.to_qkv.weight.data.clamp(0,1) 
             max = attens.fn.to_qkv.weight.data.max().cpu().detach().numpy()
             min = attens.fn.to_qkv.weight.data.min().cpu().detach().numpy()
@@ -399,28 +401,21 @@ def train(epoch):
                 #print('k_norm',torch.norm(k,p=1))
                 #k_norm.append(torch.norm(k,p=1))
                 '''
-                
-                
                 print('q_norm',torch.norm(q,p=1))
 
                 q1 = project_onto_l1_ball(q,args.q_eps)
-                #q1 = m
-                print('q1_norm',torch.norm(q1,p=1))
+                #print('q1_norm',torch.norm(q1,p=1))
                 
-                #k1 = k.clone
-                print('k_norm',torch.norm(k,p=1))
+                #print('k_norm',torch.norm(k,p=1))
                 k1 = k[0]
                 for i in range(k.shape[0]-1):
                     k1 = torch.cat((k1,k[i+1]),0)
                 
                 m = project_onto_l1_ball(k1.unsqueeze(0),args.k_eps).squeeze(0).chunk(512,dim=0)
                 k1 = torch.transpose(torch.stack(m,1),0,1)
-                #k1 = m
-                print('k1_norm',torch.norm(k1,p=1))
+                #print('k1_norm',torch.norm(k1,p=1))
                 
                 m = torch.cat((q1,k1,v),dim = 0)
-                #print("new_m")
-                #print(m.shape)
                 attens.fn.to_qkv.weight.data = m
             
         optimizer.zero_grad()
@@ -438,7 +433,7 @@ def train(epoch):
     else:
     '''
     
-    return train_loss/(batch_idx+1),max,min,mean,before,after
+    return train_loss/(batch_idx+1),max,min,mean,before,after,diffnorm
 ##### Validation
 def test(epoch):
     global best_acc
@@ -495,7 +490,7 @@ for epoch in range(start_epoch, args.n_epochs):
         trainloss,max,min,mean,before, after, q_norm_mean,k_norm_mean = train(epoch)
     else:
     '''
-    trainloss,max,min,mean,before, after = train(epoch)
+    trainloss,max,min,mean,before, after,diffnorm = train(epoch)
     val_loss, acc = test(epoch)
     
     scheduler.step(epoch-1) # step cosine scheduling

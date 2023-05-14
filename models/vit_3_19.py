@@ -56,7 +56,7 @@ class Attention(nn.Module):
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
 
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
-        dots = torch.clamp(dots, 0, 1)
+        #dots = torch.clamp(dots, 0, 1)
         #print("test")
         #attn = self.(dots)
         #attn = torch.ones(1,dots.size(dim=1)).cuda()       

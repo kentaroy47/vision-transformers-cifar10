@@ -53,6 +53,7 @@ class Attention(nn.Module):
         #self.scale = dim_head ** -1
         self.before = []
         self.after = []
+        self.diffnorm = []
         self.attend = nn.Softmax(dim = -1)
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
 
@@ -69,6 +70,7 @@ class Attention(nn.Module):
         # capture dots' min max mean sum before softmax
         self.before = []
         self.after = []
+        self.diffnorm = 0
         min = dots.min().cpu().detach().numpy()
         max = dots.max().cpu().detach().numpy()
         mean = dots.mean().cpu().detach().numpy()
@@ -84,6 +86,8 @@ class Attention(nn.Module):
         max = attn.max().cpu().detach().numpy()
         mean = attn.mean().cpu().detach().numpy()
         #sum = attn.sum(dim=-1).cpu().detach().numpy()
+        self.diffnorm = torch.norm(attn - dots,'fro')
+        
 
         self.after.append(min)
         self.after.append(max)
