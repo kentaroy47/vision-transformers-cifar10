@@ -61,7 +61,7 @@ if usewandb:
 bs = int(args.bs)
 imsize = int(args.size)
 
-use_amp = bool(~args.noamp)
+use_amp = not args.noamp
 aug = args.noaug
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
