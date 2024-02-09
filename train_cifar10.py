@@ -35,7 +35,7 @@ parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
-parser.add_argument('--noaug', action='store_true', help='disable use randomaug')
+parser.add_argument('--noaug', action='store_false', help='disable use randomaug')
 parser.add_argument('--noamp', action='store_true', help='disable mixed precision training. for older pytorch versions')
 parser.add_argument('--nowandb', action='store_true', help='disable wandb')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
