@@ -18,6 +18,8 @@ Using the repository is straightforward - all you need to do is run the `train_c
 
 * Changed default training settings for ViT.
 
+* Fixed some bugs and training settings (2024/2)
+
 # Usage example
 `python train_cifar10.py` # vit-patchsize-4
 
