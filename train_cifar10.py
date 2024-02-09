@@ -40,6 +40,7 @@ parser.add_argument('--noamp', action='store_true', help='disable mixed precisio
 parser.add_argument('--nowandb', action='store_true', help='disable wandb')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
+parser.add_argument('--dp' action='store_true', help='use data parallel')
 parser.add_argument('--bs', default='512')
 parser.add_argument('--size', default="32")
 parser.add_argument('--n_epochs', type=int, default='200')
@@ -222,9 +223,10 @@ elif args.net=="swin":
 # For Multi-GPU
 if 'cuda' in device:
     print(device)
-    print("using data parallel")
-    net = torch.nn.DataParallel(net) # make parallel
-    cudnn.benchmark = True
+    if args.dp:
+        print("using data parallel")
+        net = torch.nn.DataParallel(net) # make parallel
+        cudnn.benchmark = True
 
 if args.resume:
     # Load checkpoint.
