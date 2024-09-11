@@ -5,6 +5,17 @@ The whole codebase is implemented in Pytorch, which makes it easier for you to t
 
 Using the repository is straightforward - all you need to do is run the `train_cifar10.py` script with different arguments, depending on the model and training parameters you'd like to use.
 
+Please use this citation format if you use this in your research:
+```
+@misc{yoshioka2024visiontransformers,
+  author       = {Kentaro Yoshioka},
+  title        = {vision-transformers-cifar10: Training Vision Transformers (ViT) and related models on CIFAR-10},
+  year         = {2024},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/kentaroy47/vision-transformers-cifar10}}
+}
+```
+
 ### Updates
 * Added [ConvMixer]((https://openreview.net/forum?id=TVHS5Y4dNvM)) implementation. Really simple! (2021/10)
 
