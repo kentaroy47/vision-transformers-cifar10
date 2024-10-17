@@ -1492,3 +1492,9 @@ Thu Oct 17 15:44:24 2024 Epoch 6, lr: 0.0000999, val loss: 230.82834, acc: 10.00
 Thu Oct 17 15:44:36 2024 Epoch 7, lr: 0.0000998, val loss: 230.63091, acc: 10.00000
 Thu Oct 17 15:44:49 2024 Epoch 8, lr: 0.0000998, val loss: 230.65004, acc: 10.00000
 Thu Oct 17 15:45:02 2024 Epoch 9, lr: 0.0000997, val loss: 230.73829, acc: 10.00000
+Thu Oct 17 15:45:15 2024 Epoch 10, lr: 0.0000996, val loss: 230.65726, acc: 10.00000
+Thu Oct 17 15:45:28 2024 Epoch 11, lr: 0.0000995, val loss: 231.01226, acc: 10.00000
+Thu Oct 17 15:45:41 2024 Epoch 12, lr: 0.0000994, val loss: 230.67461, acc: 10.00000
+Thu Oct 17 15:45:53 2024 Epoch 13, lr: 0.0000993, val loss: 230.73189, acc: 10.00000
+Thu Oct 17 15:46:06 2024 Epoch 14, lr: 0.0000991, val loss: 230.45231, acc: 10.00000
+Thu Oct 17 15:46:19 2024 Epoch 15, lr: 0.0000990, val loss: 230.49014, acc: 10.00000
