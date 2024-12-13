@@ -33,6 +33,8 @@ Please use this citation format if you use this in your research.
 
 * Fixed some bugs and training settings (2024/2)
 
+* Added onnx and torchscript model exports. (2024/12)
+
 # Usage example
 `python train_cifar10.py` # vit-patchsize-4
 
