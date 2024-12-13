@@ -10,7 +10,7 @@ data/
 checkpoint/
 wandb/
 log/
-
+exported_models/
 
 # Distribution / packaging
 .Python
