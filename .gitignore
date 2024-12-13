@@ -5,6 +5,12 @@ __pycache__/
 
 # C extensions
 *.so
+*csv
+data/
+checkpoint/
+wandb/
+log/
+
 
 # Distribution / packaging
 .Python
