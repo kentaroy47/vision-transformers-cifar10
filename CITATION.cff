@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: Yoshioka
+  given-names: Kentaro
+  orcid: "https://orcid.org/0000-0001-5640-2250"
+title: "vision-transformers-cifar10"
+version: 1.0.0
+doi: 10.5281/zenodo.14279880
+date-released: 2024-12-04
+url: "https://github.com/kentaroy47/vision-transformers-cifar10"

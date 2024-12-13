@@ -1,4 +1,6 @@
 # from: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/simple_vit.py
+# this is a much simpler vit implementation like the karpathy minGPT model.
+# https://github.com/karpathy/minGPT/blob/master/mingpt/model.py
 
 import torch
 from torch import nn
