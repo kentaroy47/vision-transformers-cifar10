@@ -223,7 +223,7 @@ elif args.net=="swin":
 elif args.net=="mobilevit":
     net = mobilevit_xxs(size, 10)
 else:
-    Exception("No valid model")
+    raise ValueError(f"'{args.net}' is not a valid model")
 
 # For Multi-GPU
 if 'cuda' in device:
