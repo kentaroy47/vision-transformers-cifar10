@@ -29,6 +29,7 @@ from utils import progress_bar
 from randomaug import RandAugment
 from models.vit import ViT
 from models.convmixer import ConvMixer
+from models.mobilevit import mobilevit_xxs
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
@@ -219,6 +220,10 @@ elif args.net=="swin":
     net = swin_t(window_size=args.patch,
                 num_classes=10,
                 downscaling_factors=(2,2,2,1))
+elif args.net=="mobilevit":
+    net = mobilevit_xxs(size, 10)
+else:
+    Exception("No valid model")
 
 # For Multi-GPU
 if 'cuda' in device:
