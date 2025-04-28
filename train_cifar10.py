@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
-
-Train CIFAR10 with PyTorch and Vision Transformers!
+Train CIFAR10/CIFAR100 with PyTorch and Vision Transformers!
 written by @kentaroy47, @arutema47
-
+modified to support CIFAR100
 '''
 
 from __future__ import print_function
@@ -29,9 +28,10 @@ from utils import progress_bar
 from randomaug import RandAugment
 from models.vit import ViT
 from models.convmixer import ConvMixer
+#from models.mobilevit import mobilevit_xxs
 
 # parsers
-parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
+parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Training')
 parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -47,6 +47,7 @@ parser.add_argument('--n_epochs', type=int, default='200')
 parser.add_argument('--patch', default='4', type=int, help="patch for ViT")
 parser.add_argument('--dimhead', default="512", type=int)
 parser.add_argument('--convkernel', default='8', type=int, help="parameter for convmixer")
+parser.add_argument('--dataset', default='cifar10', type=str, help='dataset to use (cifar10 or cifar100)')
 
 args = parser.parse_args()
 
@@ -54,8 +55,8 @@ args = parser.parse_args()
 usewandb = ~args.nowandb
 if usewandb:
     import wandb
-    watermark = "{}_lr{}".format(args.net, args.lr)
-    wandb.init(project="cifar10-challange",
+    watermark = "{}_lr{}_{}".format(args.net, args.lr, args.dataset)
+    wandb.init(project="cifar-challenge",
             name=watermark)
     wandb.config.update(args)
 
@@ -76,18 +77,32 @@ if args.net=="vit_timm":
 else:
     size = imsize
 
+# Set up normalization based on the dataset
+if args.dataset == 'cifar10':
+    mean = (0.4914, 0.4822, 0.4465)
+    std = (0.2023, 0.1994, 0.2010)
+    num_classes = 10
+    dataset_class = torchvision.datasets.CIFAR10
+elif args.dataset == 'cifar100':
+    mean = (0.5071, 0.4867, 0.4408)
+    std = (0.2675, 0.2565, 0.2761)
+    num_classes = 100
+    dataset_class = torchvision.datasets.CIFAR100
+else:
+    raise ValueError("Dataset must be either 'cifar10' or 'cifar100'")
+
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.Resize(size),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    transforms.Normalize(mean, std),
 ])
 
 transform_test = transforms.Compose([
     transforms.Resize(size),
     transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    transforms.Normalize(mean, std),
 ])
 
 # Add RandAugment with N, M(hyperparameter)
@@ -96,30 +111,35 @@ if aug:
     transform_train.transforms.insert(0, RandAugment(N, M))
 
 # Prepare dataset
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+trainset = dataset_class(root='./data', train=True, download=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+testset = dataset_class(root='./data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
 
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+# Set up class names based on the dataset
+if args.dataset == 'cifar10':
+    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+else:
+    # CIFAR100 has 100 classes, so we don't list them all here
+    classes = None
 
 # Model factory..
 print('==> Building model..')
 # net = VGG('VGG19')
 if args.net=='res18':
-    net = ResNet18()
+    net = ResNet18(num_classes=num_classes)
 elif args.net=='vgg':
-    net = VGG('VGG19')
+    net = VGG('VGG19', num_classes=num_classes)
 elif args.net=='res34':
-    net = ResNet34()
+    net = ResNet34(num_classes=num_classes)
 elif args.net=='res50':
-    net = ResNet50()
+    net = ResNet50(num_classes=num_classes)
 elif args.net=='res101':
-    net = ResNet101()
+    net = ResNet101(num_classes=num_classes)
 elif args.net=="convmixer":
     # from paper, accuracy >96%. you can tune the depth and dim to scale accuracy and speed.
-    net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
+    net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=num_classes)
 elif args.net=="mlpmixer":
     from models.mlpmixer import MLPMixer
     net = MLPMixer(
@@ -128,14 +148,14 @@ elif args.net=="mlpmixer":
     patch_size = args.patch,
     dim = 512,
     depth = 6,
-    num_classes = 10
+    num_classes = num_classes
 )
 elif args.net=="vit_small":
     from models.vit_small import ViT
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = num_classes,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -148,7 +168,7 @@ elif args.net=="vit_tiny":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = num_classes,
     dim = int(args.dimhead),
     depth = 4,
     heads = 6,
@@ -161,18 +181,18 @@ elif args.net=="simplevit":
     net = SimpleViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = num_classes,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
     mlp_dim = 512
 )
 elif args.net=="vit":
-    # ViT for cifar10
+    # ViT for cifar10/100
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = num_classes,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -183,13 +203,13 @@ elif args.net=="vit":
 elif args.net=="vit_timm":
     import timm
     net = timm.create_model("vit_base_patch16_384", pretrained=True)
-    net.head = nn.Linear(net.head.in_features, 10)
+    net.head = nn.Linear(net.head.in_features, num_classes)
 elif args.net=="cait":
     from models.cait import CaiT
     net = CaiT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = num_classes,
     dim = int(args.dimhead),
     depth = 6,   # depth of transformer for patch to patch attention only
     cls_depth=2, # depth of cross attention of CLS tokens to patch
@@ -204,7 +224,7 @@ elif args.net=="cait_small":
     net = CaiT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 10,
+    num_classes = num_classes,
     dim = int(args.dimhead),
     depth = 6,   # depth of transformer for patch to patch attention only
     cls_depth=2, # depth of cross attention of CLS tokens to patch
@@ -217,8 +237,12 @@ elif args.net=="cait_small":
 elif args.net=="swin":
     from models.swin import swin_t
     net = swin_t(window_size=args.patch,
-                num_classes=10,
+                num_classes=num_classes,
                 downscaling_factors=(2,2,2,1))
+elif args.net=="mobilevit":
+    net = mobilevit_xxs(size, num_classes)
+else:
+    raise ValueError(f"'{args.net}' is not a valid model")
 
 # For Multi-GPU
 if 'cuda' in device:
@@ -232,7 +256,8 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/{}-ckpt.t7'.format(args.net))
+    checkpoint_path = './checkpoint/{}-{}-{}-ckpt.t7'.format(args.net, args.dataset, args.patch)
+    checkpoint = torch.load(checkpoint_path)
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
@@ -301,18 +326,23 @@ def test(epoch):
     acc = 100.*correct/total
     if acc > best_acc:
         print('Saving..')
-        state = {"model": net.state_dict(),
-              "optimizer": optimizer.state_dict(),
-              "scaler": scaler.state_dict()}
+        state = {
+            "net": net.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "scaler": scaler.state_dict(),
+            "acc": acc,
+            "epoch": epoch,
+        }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
+        torch.save(state, './checkpoint/{}-{}-{}-ckpt.t7'.format(args.net, args.dataset, args.patch))
         best_acc = acc
     
     os.makedirs("log", exist_ok=True)
     content = time.ctime() + ' ' + f'Epoch {epoch}, lr: {optimizer.param_groups[0]["lr"]:.7f}, val loss: {test_loss:.5f}, acc: {(acc):.5f}'
     print(content)
-    with open(f'log/log_{args.net}_patch{args.patch}.txt', 'a') as appender:
+    log_file = f'log/log_{args.net}_{args.dataset}_patch{args.patch}.txt'
+    with open(log_file, 'a') as appender:
         appender.write(content + "\n")
     return test_loss, acc
 
@@ -339,7 +369,8 @@ for epoch in range(start_epoch, args.n_epochs):
         "epoch_time": time.time()-start})
 
     # Write out csv..
-    with open(f'log/log_{args.net}_patch{args.patch}.csv', 'w') as f:
+    csv_file = f'log/log_{args.net}_{args.dataset}_patch{args.patch}.csv'
+    with open(csv_file, 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerow(list_loss) 
         writer.writerow(list_acc) 
@@ -347,5 +378,4 @@ for epoch in range(start_epoch, args.n_epochs):
 
 # writeout wandb
 if usewandb:
-    wandb.save("wandb_{}.h5".format(args.net))
-    
+    wandb.save("wandb_{}_{}.h5".format(args.net, args.dataset))

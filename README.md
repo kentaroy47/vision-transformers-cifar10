@@ -1,7 +1,7 @@
 # vision-transformers-cifar10
-This is your go-to playground for training Vision Transformers (ViT) and its related models on CIFAR-10, a common benchmark dataset in computer vision.
+This is your go-to playground for training Vision Transformers (ViT) and its related models on CIFAR-10/CIFAR-100, a common benchmark dataset in computer vision.
 
-The whole codebase is implemented in Pytorch, which makes it easier for you to tweak and experiment. Over the months, we've made several notable updates including adding different models like ConvMixer, CaiT, ViT-small, SwinTransformers, and MLP mixer. We've also adapted the default training settings for ViT to fit better with the CIFAR-10 dataset.
+The whole codebase is implemented in Pytorch, which makes it easier for you to tweak and experiment. Over the months, we've made several notable updates including adding different models like ConvMixer, CaiT, ViT-small, SwinTransformers, and MLP mixer. We've also adapted the default training settings for ViT to fit better with the CIFAR-10/CIFAR-100 dataset.
 
 Using the repository is straightforward - all you need to do is run the `train_cifar10.py` script with different arguments, depending on the model and training parameters you'd like to use.
 
@@ -33,8 +33,12 @@ Please use this citation format if you use this in your research.
 
 * Fixed some bugs and training settings (2024/2)
 
+* Add CIFAR-100 support (2025/4)
+
 # Usage example
 `python train_cifar10.py` # vit-patchsize-4
+
+`python train_cifar10.py --dataset cifar100` # cifar-100
 
 `python train_cifar10.py  --size 48` # vit-patchsize-4-imsize-48
 
