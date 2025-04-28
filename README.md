@@ -83,6 +83,9 @@ Please use this citation format if you use this in your research.
 | CIFAR100 | Accuracy | Train Log |
 |:-----------:|:--------:|:--------:|
 | ViT patch=4 Epoch@200 |    52%   | [Log](https://api.wandb.ai/links/arutema47/f8mz3mpk) |
+| resnet18+randaug |    71%   | [Log](https://wandb.ai/arutema47/cifar-challenge/reports/Res18-CIFAR100--VmlldzoxMjUwNzU3Mg?accessToken=fw9ojmpfuqrrxjers2duixssezqifaonvbmf8x3ynieldw3auh53ax992g0z6cx3) |
+
+
 
 # Used in..
 * Vision Transformer Pruning [arxiv](https://arxiv.org/abs/2104.08500) [github](https://github.com/Cydia2018/ViT-cifar10-pruning)
