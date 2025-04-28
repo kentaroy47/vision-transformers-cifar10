@@ -33,6 +33,10 @@ Please use this citation format if you use this in your research.
 
 * Fixed some bugs and training settings (2024/2)
 
+* Added onnx and torchscript model exports. (2024/12)
+
+* Added mobilevit. (2025/1)
+
 * Add CIFAR-100 support (2025/4)
 
 # Usage example
@@ -81,3 +85,10 @@ Please use this citation format if you use this in your research.
 * Understanding why ViT trains badly on small datasets: an intuitive perspective [arxiv](https://arxiv.org/abs/2302.03751)
 * Training deep neural networks with adaptive momentum inspired by the quadratic optimization [arxiv](https://arxiv.org/abs/2110.09057)
 * [Moderate coreset: A universal method of data selection for real-world data-efficient deep learning ](https://openreview.net/forum?id=7D5EECbOaf9)
+
+# Model Export
+This repository supports exporting trained models to ONNX and TorchScript formats for deployment purposes. You can export your trained models using the `export_models.py` script.
+
+### Basic Usage
+```bash
+python export_models.py --checkpoint path/to/checkpoint --model_type vit --output_dir exported_models

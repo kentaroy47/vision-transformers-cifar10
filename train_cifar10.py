@@ -28,7 +28,7 @@ from utils import progress_bar
 from randomaug import RandAugment
 from models.vit import ViT
 from models.convmixer import ConvMixer
-#from models.mobilevit import mobilevit_xxs
+from models.mobilevit import mobilevit_xxs
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Training')
