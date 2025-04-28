@@ -64,7 +64,7 @@ Please use this citation format if you use this in your research.
 
 # Results..
 
-|             | Accuracy | Train Log |
+| CIFAR10 | Accuracy | Train Log |
 |:-----------:|:--------:|:--------:|
 | ViT patch=2 |    80%    | |
 | ViT patch=4 Epoch@200 |    80%   | [Log](https://wandb.ai/arutema47/cifar10-challange/reports/Untitled-Report--VmlldzoxNjU3MTU2?accessToken=3y3ib62e8b9ed2m2zb22dze8955fwuhljl5l4po1d5a3u9b7yzek1tz7a0d4i57r) |
@@ -79,6 +79,10 @@ Please use this citation format if you use this in your research.
 | [ConvMixerTiny(no pretrain)](https://openreview.net/forum?id=TVHS5Y4dNvM) | 96.3% |[Log](https://wandb.ai/arutema47/cifar10-challange/reports/convmixer--VmlldzoyMjEyOTk1?accessToken=2w9nox10so11ixf7t0imdhxq1rf1ftgzyax4r9h896iekm2byfifz3b7hkv3klrt)|
 |   resnet18  |  93%  | |
 |   resnet18+randaug  |  95%  | [Log](https://wandb.ai/arutema47/cifar10-challange/reports/Untitled-Report--VmlldzoxNjU3MTYz?accessToken=968duvoqt6xq7ep75ob0yppkzbxd0q03gxy2apytryv04a84xvj8ysdfvdaakij2) |
+
+| CIFAR100 | Accuracy | Train Log |
+|:-----------:|:--------:|:--------:|
+| ViT patch=4 Epoch@200 |    52%   | [Log](https://api.wandb.ai/links/arutema47/f8mz3mpk) |
 
 # Used in..
 * Vision Transformer Pruning [arxiv](https://arxiv.org/abs/2104.08500) [github](https://github.com/Cydia2018/ViT-cifar10-pruning)
