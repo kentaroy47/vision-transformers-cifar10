@@ -5,7 +5,7 @@ The whole codebase is implemented in Pytorch, which makes it easier for you to t
 
 Using the repository is straightforward - all you need to do is run the `train_cifar10.py` script with different arguments, depending on the model and training parameters you'd like to use.
 
-Thanks, the repo has been used in [10+ papers!](https://scholar.google.co.jp/scholar?hl=en&as_sdt=0%2C5&q=vision-transformers-cifar10&btnG=)
+Thanks, the repo has been used in [20+ papers!](https://scholar.google.co.jp/scholar?hl=en&as_sdt=0%2C5&q=vision-transformers-cifar10&btnG=)
 
 Please use this citation format if you use this in your research.
 ```
@@ -39,6 +39,8 @@ Please use this citation format if you use this in your research.
 
 * Add CIFAR-100 support (2025/4)
 
+* Add Dynamic Tanh ViT (2025/6)
+
 # Usage example
 `python train_cifar10.py` # vit-patchsize-4
 
@@ -51,6 +53,8 @@ Please use this citation format if you use this in your research.
 `python train_cifar10.py --net vit_small --n_epochs 400` # vit-small
 
 `python train_cifar10.py --net vit_timm` # train with pretrained vit
+
+`python train_cifar10.py --net dyt` # train with Layernorm-less ViT (DyT)
 
 `python train_cifar10.py --net convmixer --n_epochs 400` # train with convmixer
 
@@ -71,6 +75,7 @@ Please use this citation format if you use this in your research.
 | ViT patch=4 Epoch@500 |    88%   | [Log](https://wandb.ai/arutema47/cifar10-challange/reports/Untitled-Report--VmlldzoxNjU3MTU2?accessToken=3y3ib62e8b9ed2m2zb22dze8955fwuhljl5l4po1d5a3u9b7yzek1tz7a0d4i57r) |
 | ViT patch=8 |    30%   | |
 | ViT small  | 80% | |
+| DyT |    ??%   | [Log](https://api.wandb.ai/links/arutema47/9lsyl4u0) |
 | MLP mixer |    88%   | |
 | CaiT  | 80% | |
 | Swin-t  | 90% | |

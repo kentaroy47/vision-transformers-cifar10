@@ -29,6 +29,7 @@ from randomaug import RandAugment
 from models.vit import ViT
 from models.convmixer import ConvMixer
 from models.mobilevit import mobilevit_xxs
+from models.dyt import DyT
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Training')
@@ -190,6 +191,19 @@ elif args.net=="simplevit":
 elif args.net=="vit":
     # ViT for cifar10/100
     net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = num_classes,
+    dim = int(args.dimhead),
+    depth = 6,
+    heads = 8,
+    mlp_dim = 512,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
+elif args.net=="dyt":
+    # DyT for cifar10/100
+    net = DyT(
     image_size = size,
     patch_size = args.patch,
     num_classes = num_classes,
