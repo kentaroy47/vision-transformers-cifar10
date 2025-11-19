@@ -5,7 +5,7 @@ The whole codebase is implemented in Pytorch, which makes it easier for you to t
 
 Using the repository is straightforward - all you need to do is run the `train_cifar10.py` script with different arguments, depending on the model and training parameters you'd like to use.
 
-Thanks, the repo has been used in [20+ papers!](https://scholar.google.co.jp/scholar?hl=en&as_sdt=0%2C5&q=vision-transformers-cifar10&btnG=)
+Thanks, the repo has been used in [30+ papers](https://scholar.google.co.jp/scholar?hl=en&as_sdt=0%2C5&q=vision-transformers-cifar10&btnG=) including CVPR, ICLR, Neurips!
 
 Please use this citation format if you use this in your research.
 ```
