@@ -40,14 +40,14 @@ parser.add_argument('--noamp', action='store_true', help='disable mixed precisio
 parser.add_argument('--nowandb', action='store_true', help='disable wandb')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
-parser.add_argument('--bs', default='512')
+parser.add_argument('--bs', default='2048')
 parser.add_argument('--size', default="32")
 parser.add_argument('--n_epochs', type=int, default='200')
-parser.add_argument('--patch', default='4', type=int, help="patch for ViT")
-parser.add_argument('--dimhead', default="128", type=int)
+parser.add_argument('--patch', default='8', type=int, help="patch for ViT")
+parser.add_argument('--dimhead', default="512", type=int)
 parser.add_argument('--head', default="8", type=int)
 parser.add_argument('--depth', default="6", type=int)
-parser.add_argument('--mlp', default="256", type=int)
+parser.add_argument('--mlp', default="1024", type=int)
 
 args = parser.parse_args()
 
@@ -186,7 +186,7 @@ if args.resume:
 criterion = nn.CrossEntropyLoss()
 
 if args.opt == "adam":
-    optimizer = optim.Adam(net.parameters(), lr=args.lr)
+    optimizer = optim.AdamW(net.parameters(), lr=args.lr)
 elif args.opt == "sgd":
     optimizer = optim.SGD(net.parameters(), lr=args.lr)  
     
