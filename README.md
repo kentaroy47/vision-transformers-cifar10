@@ -72,6 +72,7 @@ Please use this citation format if you use this in your research.
 |:-----------:|:--------:|:--------:|
 | ViT patch=2 |    80%    | |
 | ViT patch=4 Epoch@200 |    80%   | [Log](https://wandb.ai/arutema47/cifar10-challange/reports/Untitled-Report--VmlldzoxNjU3MTU2?accessToken=3y3ib62e8b9ed2m2zb22dze8955fwuhljl5l4po1d5a3u9b7yzek1tz7a0d4i57r) |
+| ViT patch=4 Epoch@500 |    85%   | [Log](https://api.wandb.ai/links/arutema47/wrfsfmlo) |
 | ViT patch=4 Epoch@1000 |    89%   | [Log](https://api.wandb.ai/links/arutema47/sr9eph7v) |
 | ViT patch=8 |    30%   | |
 | ViT small  | 80% | |
