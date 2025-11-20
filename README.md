@@ -42,6 +42,8 @@ Please use this citation format if you use this in your research.
 * Add Dynamic Tanh ViT (2025/6)
 
 # Usage example
+`pip install -r requirements.txt` # install dependencies
+
 `python train_cifar10.py` # vit-patchsize-4
 
 `python train_cifar10.py --dataset cifar100` # cifar-100
